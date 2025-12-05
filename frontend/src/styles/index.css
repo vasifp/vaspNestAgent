@@ -1,0 +1,347 @@
+/**
+ * Styles for vaspNestAgent dashboard.
+ */
+
+/* Reset and base styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: #111827;
+  color: #F9FAFB;
+  line-height: 1.5;
+}
+
+/* Dashboard layout */
+.dashboard {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #1F2937;
+  border-bottom: 1px solid #374151;
+}
+
+.dashboard-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #F9FAFB;
+}
+
+.dashboard-content {
+  flex: 1;
+  padding: 2rem;
+  display: grid;
+  gap: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.dashboard-footer {
+  padding: 1rem 2rem;
+  text-align: center;
+  background-color: #1F2937;
+  border-top: 1px solid #374151;
+  color: #9CA3AF;
+  font-size: 0.875rem;
+}
+
+/* Connection status */
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.connection-status.connected {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10B981;
+}
+
+.connection-status.connecting {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #F59E0B;
+}
+
+.connection-status.disconnected {
+  background-color: rgba(107, 114, 128, 0.1);
+  color: #6B7280;
+}
+
+.connection-status.error {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+}
+
+.connection-status .status-icon {
+  font-size: 1rem;
+}
+
+.connection-status .last-update {
+  color: #9CA3AF;
+  margin-left: 0.5rem;
+}
+
+.connection-status .error-message {
+  color: #EF4444;
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* Temperature display */
+.temperature-display {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.temperature-display.loading,
+.temperature-display.no-data {
+  justify-content: center;
+  padding: 2rem;
+  background-color: #1F2937;
+  border-radius: 0.75rem;
+  color: #9CA3AF;
+}
+
+.temperature-card {
+  flex: 1;
+  min-width: 150px;
+  padding: 1.5rem;
+  background-color: #1F2937;
+  border-radius: 0.75rem;
+  text-align: center;
+}
+
+.temperature-card .label {
+  font-size: 0.875rem;
+  color: #9CA3AF;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.temperature-card .value {
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.temperature-card.ambient .value {
+  color: #3B82F6;
+}
+
+.temperature-card.target .value {
+  color: #10B981;
+}
+
+.temperature-card.differential .value {
+  color: #F9FAFB;
+}
+
+.temperature-card.differential.warning .value {
+  color: #F59E0B;
+}
+
+.temperature-card.differential.danger .value {
+  color: #EF4444;
+}
+
+.temperature-card .humidity,
+.temperature-card .hvac-mode,
+.temperature-card .status {
+  font-size: 0.75rem;
+  color: #9CA3AF;
+  margin-top: 0.5rem;
+}
+
+.temperature-display .timestamp {
+  width: 100%;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #6B7280;
+  margin-top: 0.5rem;
+}
+
+/* Temperature chart */
+.temperature-chart {
+  background-color: #1F2937;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.temperature-chart h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #F9FAFB;
+}
+
+.temperature-chart.no-data {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  color: #9CA3AF;
+}
+
+.temperature-chart .adjustment-legend {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  color: #9CA3AF;
+}
+
+.temperature-chart .adjustment-legend .marker {
+  color: #EF4444;
+}
+
+.chart-tooltip {
+  background-color: #374151;
+  border: 1px solid #4B5563;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.chart-tooltip .time {
+  color: #9CA3AF;
+  margin-bottom: 0.5rem;
+}
+
+/* Adjustment history */
+.adjustment-history {
+  background-color: #1F2937;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.adjustment-history h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #F9FAFB;
+}
+
+.adjustment-history.loading,
+.adjustment-history.no-data {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  color: #9CA3AF;
+}
+
+.adjustment-history table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.adjustment-history th,
+.adjustment-history td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #374151;
+}
+
+.adjustment-history th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.adjustment-history td {
+  font-size: 0.875rem;
+  color: #F9FAFB;
+}
+
+.adjustment-history tr.latest {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.adjustment-history .timestamp {
+  color: #9CA3AF;
+}
+
+.adjustment-history .temperature {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+}
+
+.adjustment-history .reason {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adjustment-history .notification .sent {
+  color: #10B981;
+}
+
+.adjustment-history .notification .not-sent {
+  color: #6B7280;
+}
+
+/* Loading spinner */
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #374151;
+  border-top-color: #3B82F6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .dashboard-content {
+    padding: 1rem;
+  }
+
+  .temperature-display {
+    flex-direction: column;
+  }
+
+  .temperature-card {
+    min-width: 100%;
+  }
+
+  .adjustment-history table {
+    font-size: 0.75rem;
+  }
+
+  .adjustment-history th,
+  .adjustment-history td {
+    padding: 0.5rem;
+  }
+}

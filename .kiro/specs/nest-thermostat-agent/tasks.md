@@ -1,0 +1,267 @@
+# Implementation Plan
+
+- [x] 1. Set up project structure and repository
+  - [x] 1.1 Initialize Git repository and connect to https://github.com/vasifp/vaspNestAgent.git
+    - Create .gitignore for Python, Node.js, and Terraform files
+    - Create README.md with project overview
+    - _Requirements: 13.1, 13.2, 13.3_
+  - [x] 1.2 Set up Python backend project structure
+    - Create pyproject.toml with dependencies (strands-agents, boto3, ariadne, fastapi, uvicorn, hypothesis)
+    - Create src/ directory structure with agents/, models/, services/, graphql/, server/ packages
+    - _Requirements: 9.1, 9.2_
+  - [x] 1.3 Set up React frontend project structure
+    - Initialize React app with TypeScript using Vite
+    - Install dependencies (apollo-client, graphql-ws, recharts)
+    - Create src/ directory structure with components/, graphql/, apollo/, styles/
+    - _Requirements: 16.1, 16.2, 16.3_
+
+- [x] 2. Implement core data models and configuration
+  - [x] 2.1 Create data models in src/models/data.py
+    - Implement TemperatureData, AdjustmentResult, AdjustmentEvent, NotificationEvent, LogEvent dataclasses
+    - Implement EventType and Severity enums
+    - _Requirements: 1.3, 2.4, 3.2_
+  - [x] 2.2 Write property test for data model serialization round-trip
+    - **Property 12: Temperature Data Parsing Round-Trip**
+    - **Validates: Requirements 1.3**
+  - [x] 2.3 Implement configuration manager in src/config.py
+    - Load non-sensitive config from environment variables
+    - Load sensitive credentials from AWS Secrets Manager
+    - Implement validation for all configuration values
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
+  - [x] 2.4 Write property test for configuration validation
+    - **Property 6: Configuration Validation**
+    - **Validates: Requirements 5.3, 5.4**
+
+- [x] 3. Implement NestAgent sub-agent
+  - [x] 3.1 Create Nest API client in src/services/nest_api.py
+    - Implement OAuth2 authentication flow
+    - Implement get_thermostat_data() method
+    - Implement set_temperature() method
+    - Implement exponential backoff retry logic
+    - _Requirements: 1.1, 1.2, 1.4, 2.2, 2.3_
+  - [x] 3.2 Create NestAgent in src/agents/nest.py
+    - Register Strands tools for get_temperature and set_temperature
+    - Parse API responses into TemperatureData
+    - Handle API errors and return structured results
+    - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
+  - [x] 3.3 Write property test for retry limit compliance
+    - **Property 3: Retry Limit Compliance**
+    - **Validates: Requirements 1.4, 2.3, 3.3**
+
+- [x] 4. Implement LoggingAgent sub-agent
+  - [x] 4.1 Create CloudWatch client in src/services/cloudwatch.py
+    - Implement connection to CloudWatch Logs
+    - Implement put_log_events() method
+    - Implement publish_metric() method
+    - _Requirements: 11.1, 11.2, 12.7_
+  - [x] 4.2 Create LoggingAgent in src/agents/logging.py
+    - Register Strands tools for log_temperature_reading, log_adjustment, log_notification
+    - Format log events with timestamp, event type, severity, and structured data
+    - _Requirements: 11.3, 11.4, 11.5_
+  - [x] 4.3 Write property test for log event completeness
+    - **Property 7: Log Event Completeness**
+    - **Validates: Requirements 1.5, 2.4, 3.4, 5.5**
+
+- [x] 5. Implement temperature adjustment logic
+  - [x] 5.1 Implement temperature decision logic in src/agents/orchestration.py
+    - Create should_adjust_temperature() function
+    - Create calculate_new_target() function
+    - Implement cooldown period tracking
+    - _Requirements: 2.1, 2.5_
+  - [x] 5.2 Write property test for temperature adjustment logic
+    - **Property 1: Temperature Adjustment Logic**
+    - **Validates: Requirements 2.1**
+  - [x] 5.3 Write property test for cooldown period enforcement
+    - **Property 2: Cooldown Period Enforcement**
+    - **Validates: Requirements 2.5**
+
+- [x] 6. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 7. Implement notification service
+  - [x] 7.1 Create Google Voice client in src/services/google_voice.py
+    - Implement send_sms() method
+    - Implement retry logic with exponential backoff
+    - _Requirements: 3.1, 3.3_
+  - [x] 7.2 Implement notification logic in OrchestrationAgent
+    - Format notification message with previous, new, and ambient temperatures
+    - Implement rate limiting (max 1 per hour)
+    - _Requirements: 3.2, 3.5_
+  - [x] 7.3 Write property test for notification content completeness
+    - **Property 4: Notification Content Completeness**
+    - **Validates: Requirements 3.2**
+  - [x] 7.4 Write property test for rate limiting enforcement
+    - **Property 5: Rate Limiting Enforcement**
+    - **Validates: Requirements 3.5**
+
+- [x] 8. Implement Orchestration Agent and monitoring loop
+  - [x] 8.1 Create OrchestrationAgent in src/agents/orchestration.py
+    - Initialize NestAgent and LoggingAgent
+    - Implement start() and stop() methods
+    - Implement monitor_cycle() with polling interval
+    - Implement graceful shutdown handling
+    - _Requirements: 9.3, 9.4, 7.4_
+  - [x] 8.2 Implement error handling and recovery
+    - Catch and log unhandled exceptions
+    - Implement reconnection with exponential backoff
+    - Track error counts for threshold alerting
+    - _Requirements: 7.1, 7.2, 7.5_
+  - [x] 8.3 Write property test for error recovery
+    - **Property 9: Error Recovery**
+    - **Validates: Requirements 7.1**
+  - [x] 8.4 Write property test for duplicate adjustment prevention
+    - **Property 10: Duplicate Adjustment Prevention**
+    - **Validates: Requirements 7.3**
+  - [x] 8.5 Write property test for error threshold alerting
+    - **Property 11: Error Threshold Alerting**
+    - **Validates: Requirements 7.5**
+
+- [x] 9. Implement HTTP health server
+  - [x] 9.1 Create health server in src/server/health.py
+    - Implement /health endpoint returning 200 when healthy, 503 when degraded
+    - Implement /ready endpoint returning 200 when ready
+    - Implement /metrics endpoint with Prometheus-compatible format
+    - _Requirements: 6.1, 6.2, 6.3, 6.5_
+  - [x] 9.2 Write property test for metrics consistency
+    - **Property 8: Metrics Consistency**
+    - **Validates: Requirements 6.4**
+
+- [x] 10. Checkpoint - Ensure all backend tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 11. Implement GraphQL API
+  - [x] 11.1 Create GraphQL schema in src/graphql/schema.py
+    - Define Query type with currentTemperature, temperatureHistory, adjustmentHistory, temperatureTimeline
+    - Define Subscription type with temperatureUpdates, adjustmentEvents
+    - Define TemperatureReading, AdjustmentEvent, TemperatureTimeline types
+    - _Requirements: 17.1, 17.3, 17.4_
+  - [x] 11.2 Implement GraphQL resolvers in src/graphql/resolvers.py
+    - Implement query resolvers for temperature and adjustment data
+    - Implement subscription resolvers with WebSocket support
+    - _Requirements: 17.2_
+  - [x] 11.3 Integrate GraphQL server with FastAPI in src/server/graphql.py
+    - Mount GraphQL endpoint at /graphql
+    - Configure WebSocket support for subscriptions
+    - _Requirements: 17.1_
+  - [x] 11.4 Write property test for GraphQL response completeness
+    - **Property 14: GraphQL Response Completeness**
+    - **Validates: Requirements 15.1, 17.3**
+
+- [x] 12. Implement React frontend components
+  - [x] 12.1 Set up Apollo Client in frontend/src/apollo/client.ts
+    - Configure HTTP link for queries
+    - Configure WebSocket link for subscriptions
+    - Set up split link for routing
+    - _Requirements: 16.2_
+  - [x] 12.2 Create GraphQL queries and subscriptions in frontend/src/graphql/queries.ts
+    - Define TEMPERATURE_SUBSCRIPTION, ADJUSTMENT_SUBSCRIPTION
+    - Define TEMPERATURE_TIMELINE, TEMPERATURE_HISTORY, ADJUSTMENT_HISTORY queries
+    - _Requirements: 15.2, 17.2_
+  - [x] 12.3 Implement TemperatureDisplay component
+    - Display current ambient and target temperatures
+    - Show temperature differential
+    - _Requirements: 15.1_
+  - [x] 12.4 Implement TemperatureChart component with adjustment markers
+    - Plot ambient and target temperature lines using Recharts
+    - Add vertical reference lines for adjustment events
+    - Implement custom tooltip showing adjustment details
+    - _Requirements: 15.3, 15.4_
+  - [x] 12.5 Implement AdjustmentHistory component
+    - Display table of recent adjustments
+    - Highlight latest adjustment with real-time updates
+    - _Requirements: 15.4_
+  - [x] 12.6 Implement Dashboard and ConnectionStatus components
+    - Compose all components in Dashboard
+    - Show connection status indicator
+    - Handle backend unavailability gracefully
+    - _Requirements: 15.5_
+  - [x] 12.7 Write unit tests for frontend components
+    - Test TemperatureDisplay rendering
+    - Test TemperatureChart with mock data
+    - Test AdjustmentHistory table rendering
+    - _Requirements: 15.1, 15.3, 15.4_
+
+- [x] 13. Create Docker containers
+  - [x] 13.1 Create backend Dockerfile
+    - Use python:3.11-slim base image
+    - Install dependencies and copy source
+    - Create non-root user
+    - Expose port 8080
+    - _Requirements: 4.1, 4.2_
+  - [x] 13.2 Create frontend Dockerfile
+    - Use node:20-alpine for build stage
+    - Use nginx:alpine for production
+    - Copy build output and nginx config
+    - _Requirements: 16.5, 17.5_
+  - [x] 13.3 Create application entry point in src/main.py
+    - Load configuration
+    - Initialize agents
+    - Start health server and GraphQL server
+    - Start monitoring loop
+    - _Requirements: 1.1, 9.3_
+
+- [x] 14. Checkpoint - Ensure application runs locally
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 15. Create Terraform infrastructure modules
+  - [x] 15.1 Create VPC module in terraform/modules/vpc/
+    - Define VPC with CIDR 10.0.0.0/16
+    - Create public subnets (10.0.1.0/24, 10.0.2.0/24)
+    - Create private subnets (10.0.10.0/24, 10.0.20.0/24)
+    - Create Internet Gateway and NAT Gateways
+    - _Requirements: 4.5_
+  - [x] 15.2 Create EKS module in terraform/modules/eks/
+    - Create EKS cluster with version 1.28
+    - Create managed node group with configurable instance types
+    - Create IAM roles for cluster and nodes
+    - _Requirements: 4.3, 4.4_
+  - [x] 15.3 Create ECR module in terraform/modules/ecr/
+    - Create ECR repositories for backend and frontend images
+    - Configure lifecycle policies
+    - _Requirements: 4.6_
+  - [x] 15.4 Create Secrets Manager module in terraform/modules/secrets/
+    - Create secrets for Nest API credentials
+    - Create secrets for Google Voice credentials and phone number
+    - _Requirements: 4.7, 3.6_
+  - [x] 15.5 Create CloudWatch module in terraform/modules/cloudwatch/
+    - Create log group /vaspNestAgent/logs
+    - Create CloudWatch dashboard named "vaspNestAgent"
+    - Add widgets for temperature, adjustments, notifications, latencies, errors
+    - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6_
+  - [x] 15.6 Create Kubernetes module in terraform/modules/kubernetes/
+    - Create backend Deployment, Service, ConfigMap, ServiceAccount
+    - Create frontend Deployment and Service
+    - Create Ingress with ALB annotations
+    - _Requirements: 4.8, 17.5_
+
+- [x] 16. Create Terraform root configuration
+  - [x] 16.1 Create main.tf with module composition
+    - Wire up VPC, EKS, ECR, Secrets, CloudWatch, Kubernetes modules
+    - _Requirements: 8.1_
+  - [x] 16.2 Create variables.tf with configurable parameters
+    - Define variables for region, cluster size, instance types
+    - _Requirements: 8.2_
+  - [x] 16.3 Create backend.tf for remote state
+    - Configure S3 backend with DynamoDB locking
+    - _Requirements: 8.3_
+  - [x] 16.4 Create outputs.tf with deployment information
+    - Output EKS cluster endpoint, ECR URLs, kubectl commands
+    - _Requirements: 8.4_
+  - [x] 16.5 Create README.md for Terraform documentation
+    - Document module usage and required variables
+    - _Requirements: 8.5_
+
+- [x] 17. Create GitHub Actions CI/CD workflows
+  - [x] 17.1 Create .github/workflows/ci.yml
+    - Add lint jobs for backend (ruff, mypy) and frontend (eslint, tsc)
+    - Add test jobs for backend (pytest, hypothesis) and frontend (jest)
+    - Add build jobs for Docker images
+    - _Requirements: 13.5_
+  - [x] 17.2 Create .github/workflows/deploy.yml
+    - Add Terraform plan job
+    - Add Terraform apply job with manual approval
+    - Configure AWS credentials from secrets
+    - _Requirements: 13.6_
+
+- [x] 18. Final Checkpoint - Ensure all tests pass and infrastructure is ready
+  - Ensure all tests pass, ask the user if questions arise.
