@@ -577,7 +577,7 @@ def main():
     base_url = os.environ.get("JIRA_BASE_URL", "https://vaspinet.atlassian.net")
     email = os.environ.get("JIRA_USER_EMAIL")
     api_token = os.environ.get("JIRA_API_TOKEN")
-    project_key = os.environ.get("JIRA_PROJECT_KEY", "VASPNET")
+    project_key = os.environ.get("JIRA_PROJECT_KEY", "SCRUM")
 
     if args.dry_run:
         print("=== DRY RUN - Stories to be created ===\n")

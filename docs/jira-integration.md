@@ -49,13 +49,13 @@ Include the Jira ticket ID in your branch name:
 
 ```bash
 # Feature branches
-git checkout -b feature/VASPNET-123-add-temperature-alerts
+git checkout -b feature/SCRUM-123-add-temperature-alerts
 
 # Bug fix branches
-git checkout -b fix/VASPNET-456-fix-cooldown-logic
+git checkout -b fix/SCRUM-456-fix-cooldown-logic
 
 # Hotfix branches
-git checkout -b hotfix/VASPNET-789-critical-fix
+git checkout -b hotfix/SCRUM-789-critical-fix
 ```
 
 ### Commit Messages
@@ -63,8 +63,8 @@ git checkout -b hotfix/VASPNET-789-critical-fix
 Include the ticket ID in commit messages:
 
 ```bash
-git commit -m "VASPNET-123: Add temperature alert feature"
-git commit -m "VASPNET-123: Fix unit tests"
+git commit -m "SCRUM-123: Add temperature alert feature"
+git commit -m "SCRUM-123: Fix unit tests"
 ```
 
 ### Pull Request Titles
@@ -72,7 +72,7 @@ git commit -m "VASPNET-123: Fix unit tests"
 Include the ticket ID in PR titles:
 
 ```
-VASPNET-123: Add temperature alert feature
+SCRUM-123: Add temperature alert feature
 ```
 
 ### What Happens Automatically
@@ -101,7 +101,7 @@ VASPNET-123: Add temperature alert feature
 export JIRA_BASE_URL="https://vaspinet.atlassian.net"
 export JIRA_USER_EMAIL="your-email@example.com"
 export JIRA_API_TOKEN="your-api-token"
-export JIRA_PROJECT_KEY="VASPNET"
+export JIRA_PROJECT_KEY="SCRUM"
 
 # Dry run to see what will be created
 python scripts/create-jira-stories.py --dry-run
@@ -127,19 +127,19 @@ See [docs/jira-stories.md](jira-stories.md) for all story definitions that can b
 
 ```bash
 # 1. Create a branch with ticket ID
-git checkout -b feature/VASPNET-42-add-humidity-display
+git checkout -b feature/SCRUM-42-add-humidity-display
 
 # 2. Make changes
 # ... edit files ...
 
 # 3. Commit with ticket ID
-git commit -m "VASPNET-42: Add humidity display to dashboard"
+git commit -m "SCRUM-42: Add humidity display to dashboard"
 
 # 4. Push and create PR
-git push -u origin feature/VASPNET-42-add-humidity-display
+git push -u origin feature/SCRUM-42-add-humidity-display
 
 # 5. Create PR with ticket in title
-# Title: "VASPNET-42: Add humidity display to dashboard"
+# Title: "SCRUM-42: Add humidity display to dashboard"
 
 # 6. Jira ticket automatically moves to "In Review"
 
@@ -163,9 +163,9 @@ git push -u origin feature/VASPNET-42-add-humidity-display
 
 ### Ticket Not Found
 
-1. Ensure the ticket exists in the VASPNET project
+1. Ensure the ticket exists in the SCRUM project
 2. Check the ticket ID is in the branch name or PR title
-3. The pattern is case-insensitive: `VASPNET-123` or `vaspnet-123`
+3. The pattern is case-insensitive: `SCRUM-123` or `scrum-123`
 
 ## GitHub Actions Workflow
 

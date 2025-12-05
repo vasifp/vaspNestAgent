@@ -2,7 +2,7 @@
 
 This document contains all Jira stories for the vaspNestAgent project, ready to be imported into Jira.
 
-**Project:** VASPNET  
+**Project:** SCRUM  
 **URL:** https://vaspinet.atlassian.net
 
 ## Epic: vaspNestAgent - Google Nest Thermostat Monitoring Agent

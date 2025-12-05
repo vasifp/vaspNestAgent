@@ -26,7 +26,7 @@ on:
 
 env:
   JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
-  JIRA_PROJECT_KEY: VASPNET
+  JIRA_PROJECT_KEY: SCRUM
 
 jobs:
   # Extract Jira ticket ID from branch name or PR title
@@ -44,8 +44,8 @@ jobs:
           BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
           PR_TITLE="${{ github.event.pull_request.title }}"
           
-          # Pattern: VASPNET-123 or vaspnet-123
-          TICKET_PATTERN="[Vv][Aa][Ss][Pp][Nn][Ee][Tt]-[0-9]+"
+          # Pattern: SCRUM-123 or scrum-123
+          TICKET_PATTERN="[Ss][Cc][Rr][Uu][Mm]-[0-9]+"
           
           # Check branch name
           if [[ "$BRANCH_NAME" =~ ($TICKET_PATTERN) ]]; then
@@ -176,11 +176,11 @@ jobs:
         run: |
           if [[ "${{ needs.extract-ticket.outputs.has_ticket }}" != "true" ]]; then
             echo "::warning::No Jira ticket found in branch name or PR title."
-            echo "Consider using format: VASPNET-123 in your branch name or PR title"
+            echo "Consider using format: SCRUM-123 in your branch name or PR title"
             echo ""
             echo "Examples:"
-            echo "  Branch: feature/VASPNET-123-add-feature"
-            echo "  PR Title: VASPNET-123: Add new feature"
+            echo "  Branch: feature/SCRUM-123-add-feature"
+            echo "  PR Title: SCRUM-123: Add new feature"
           else
             echo "✅ Found Jira ticket: ${{ needs.extract-ticket.outputs.ticket_id }}"
           fi
