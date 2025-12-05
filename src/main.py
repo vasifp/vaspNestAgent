@@ -1,6 +1,39 @@
 """Main entry point for vaspNestAgent.
 
-Initializes configuration, agents, and servers, then starts the monitoring loop.
+This module serves as the application entry point, coordinating the initialization
+and lifecycle of all system components including:
+
+- Configuration loading (from environment and/or AWS Secrets Manager)
+- Agent initialization (OrchestrationAgent, NestAgent, LoggingAgent)
+- HTTP server startup (health endpoints, GraphQL API)
+- Signal handling for graceful shutdown
+
+Usage:
+    # Production (with AWS Secrets Manager)
+    python -m src.main
+    
+    # Local development (environment variables only)
+    python -m src.main --local
+
+Example:
+    >>> import asyncio
+    >>> from src.main import Application
+    >>> 
+    >>> async def run():
+    ...     app = Application()
+    ...     await app.initialize(use_secrets_manager=False)
+    ...     # Application is now ready
+    ...     await app.stop()
+    >>> 
+    >>> asyncio.run(run())
+
+Attributes:
+    logger: Structured logger for this module.
+
+See Also:
+    - :mod:`src.config` for configuration management
+    - :mod:`src.agents.orchestration` for the main monitoring logic
+    - :mod:`src.server.health` for health check endpoints
 """
 
 import asyncio
@@ -20,9 +53,48 @@ logger = structlog.get_logger(__name__)
 
 
 class Application:
-    """Main application class coordinating all components."""
+    """Main application class coordinating all components.
+    
+    This class manages the lifecycle of all vaspNestAgent components,
+    including initialization, startup, and graceful shutdown.
+    
+    The application follows this lifecycle:
+    
+    1. **Initialization** (:meth:`initialize`):
+       - Load configuration from environment/Secrets Manager
+       - Create agent instances (NestAgent, LoggingAgent, OrchestrationAgent)
+       - Create health server
+    
+    2. **Startup** (:meth:`start`):
+       - Start health server (background)
+       - Start orchestration agent monitoring loop
+       - Wait for shutdown signal
+    
+    3. **Shutdown** (:meth:`stop`):
+       - Stop orchestration agent gracefully
+       - Stop health server
+       - Close agent connections
+    
+    Attributes:
+        config: Application configuration instance.
+        orchestration_agent: Main coordinator agent.
+        nest_agent: Nest thermostat API agent.
+        logging_agent: CloudWatch logging agent.
+        health_server: HTTP health check server.
+    
+    Example:
+        >>> app = Application()
+        >>> await app.initialize(use_secrets_manager=False)
+        >>> # Start in background or await app.start()
+        >>> await app.stop()
+    """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the Application instance.
+        
+        Creates an empty application with no components initialized.
+        Call :meth:`initialize` to set up components.
+        """
         self.config: Optional[Config] = None
         self.orchestration_agent: Optional[OrchestrationAgent] = None
         self.nest_agent: Optional[NestAgent] = None

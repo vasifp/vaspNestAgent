@@ -1,6 +1,21 @@
 # vaspNestAgent
 
-A Google Nest Thermostat monitoring and control system built with Python using the Strands SDK for multi-agent orchestration. The system automatically adjusts temperature settings based on ambient conditions and sends notifications via Google Voice.
+[![CI](https://github.com/vasifp/vaspNestAgent/actions/workflows/ci.yml/badge.svg)](https://github.com/vasifp/vaspNestAgent/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+An intelligent Google Nest Thermostat monitoring and control system built with Python using the Strands SDK for multi-agent orchestration. The system automatically adjusts temperature settings based on ambient conditions and sends notifications via Google Voice.
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Getting Started](docs/getting-started.md) | Installation and setup guide |
+| [Architecture](docs/architecture.md) | System design and components |
+| [Configuration](docs/configuration.md) | Environment variables and settings |
+| [API Reference](docs/api-reference.md) | GraphQL API documentation |
+| [Deployment](docs/deployment.md) | AWS EKS deployment guide |
+| [Development](docs/development.md) | Contributing and testing |
 
 ## Features
 
@@ -219,18 +234,39 @@ cd frontend && npm test
 pytest tests/ --cov=src --cov-report=html
 ```
 
+## Correctness Properties
+
+The system is designed around 14 correctness properties verified by 102 property-based tests:
+
+| Property | Description |
+|----------|-------------|
+| Temperature Adjustment | Adjusts when differential < 5°F threshold |
+| Cooldown Enforcement | 30-minute cooldown between adjustments |
+| Retry Compliance | Max 5 retries for reads, 3 for writes |
+| Notification Content | Messages contain all temperature values |
+| Rate Limiting | Max 1 notification per hour |
+| Error Recovery | Continues operation after errors |
+
+See [Architecture](docs/architecture.md) for the complete list.
+
 ## License
 
-MIT License
+MIT License - See [LICENSE](LICENSE) for details.
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes with tests
+4. Run the test suite (`pytest tests/ -v`)
+5. Commit your changes (`git commit -m 'feat: Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+See [Development Guide](docs/development.md) for detailed instructions.
 
 ## Support
 
-For issues and questions, please open a GitHub issue or contact the maintainers.
+- 📖 [Documentation](docs/index.md)
+- 🐛 [Issue Tracker](https://github.com/vasifp/vaspNestAgent/issues)
+- 💬 [Discussions](https://github.com/vasifp/vaspNestAgent/discussions)

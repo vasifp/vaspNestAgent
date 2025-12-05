@@ -1,4 +1,41 @@
-"""Data models for vaspNestAgent."""
+"""Data models for vaspNestAgent.
+
+This module defines the core data structures used throughout the application
+for representing temperature readings, adjustment events, notifications,
+and log entries.
+
+All dataclasses support serialization to/from JSON and dictionaries for
+easy storage in CloudWatch Logs and transmission via GraphQL.
+
+Classes:
+    EventType: Enumeration of log event types.
+    Severity: Enumeration of log severity levels.
+    TemperatureData: Temperature reading from Nest thermostat.
+    AdjustmentResult: Result of a temperature adjustment operation.
+    AdjustmentEvent: Event logged when temperature is adjusted.
+    NotificationEvent: Event logged when notification is sent.
+    LogEvent: Structured log event for CloudWatch.
+    HealthResponse: Health check response data.
+    ReadinessResponse: Readiness check response data.
+
+Example:
+    >>> from src.models.data import TemperatureData
+    >>> from datetime import datetime
+    >>> 
+    >>> reading = TemperatureData(
+    ...     ambient_temperature=72.5,
+    ...     target_temperature=75.0,
+    ...     thermostat_id="device-123",
+    ...     timestamp=datetime.now(),
+    ... )
+    >>> 
+    >>> # Serialize to JSON
+    >>> json_str = reading.to_json()
+    >>> 
+    >>> # Deserialize from JSON
+    >>> restored = TemperatureData.from_json(json_str)
+    >>> assert restored.ambient_temperature == 72.5
+"""
 
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
@@ -8,7 +45,22 @@ import json
 
 
 class EventType(Enum):
-    """Event types for logging."""
+    """Event types for logging.
+    
+    These event types categorize log entries for filtering and analysis
+    in CloudWatch Logs and the monitoring dashboard.
+    
+    Attributes:
+        TEMPERATURE_READING: Regular temperature poll result.
+        TEMPERATURE_ADJUSTMENT: Target temperature was changed.
+        NOTIFICATION_SENT: SMS notification sent successfully.
+        NOTIFICATION_FAILED: SMS notification failed.
+        API_ERROR: Error communicating with external API.
+        AGENT_STARTED: Agent process started.
+        AGENT_STOPPED: Agent process stopped.
+        CONFIG_LOADED: Configuration loaded successfully.
+        HEALTH_CHECK: Health check performed.
+    """
 
     TEMPERATURE_READING = "temperature_reading"
     TEMPERATURE_ADJUSTMENT = "temperature_adjustment"
@@ -22,7 +74,18 @@ class EventType(Enum):
 
 
 class Severity(Enum):
-    """Log severity levels."""
+    """Log severity levels.
+    
+    Standard severity levels for categorizing log entries.
+    Maps to CloudWatch Logs severity for filtering.
+    
+    Attributes:
+        DEBUG: Detailed debugging information.
+        INFO: General informational messages.
+        WARNING: Warning conditions that may need attention.
+        ERROR: Error conditions that don't stop operation.
+        CRITICAL: Critical errors requiring immediate attention.
+    """
 
     DEBUG = "DEBUG"
     INFO = "INFO"
@@ -33,7 +96,34 @@ class Severity(Enum):
 
 @dataclass
 class TemperatureData:
-    """Temperature reading from Nest thermostat."""
+    """Temperature reading from Nest thermostat.
+    
+    Represents a single temperature reading from the Nest Smart Device
+    Management API, including ambient temperature, target setting, and
+    optional humidity and HVAC mode.
+    
+    All temperatures are in Fahrenheit.
+    
+    Attributes:
+        ambient_temperature: Current room temperature in °F.
+        target_temperature: Current target/setpoint temperature in °F.
+        thermostat_id: Unique identifier for the thermostat device.
+        timestamp: When the reading was taken.
+        humidity: Relative humidity percentage (0-100), if available.
+        hvac_mode: Current HVAC mode (HEAT, COOL, OFF, AUTO), if available.
+    
+    Example:
+        >>> data = TemperatureData(
+        ...     ambient_temperature=72.5,
+        ...     target_temperature=75.0,
+        ...     thermostat_id="enterprises/proj/devices/dev123",
+        ...     timestamp=datetime.now(),
+        ...     humidity=45.0,
+        ...     hvac_mode="HEAT",
+        ... )
+        >>> print(f"Differential: {data.target_temperature - data.ambient_temperature}°F")
+        Differential: 2.5°F
+    """
 
     ambient_temperature: float  # Fahrenheit
     target_temperature: float  # Fahrenheit
