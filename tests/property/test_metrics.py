@@ -4,22 +4,21 @@ Tests Property 8 (Metrics Consistency).
 """
 
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 
-import pytest
-from hypothesis import given, strategies as st, assume, settings
+from hypothesis import given
+from hypothesis import strategies as st
 
 from src.agents.orchestration import (
-    OrchestrationAgent,
     AdjustmentState,
-    NotificationState,
     ErrorState,
+    NotificationState,
+    OrchestrationAgent,
     record_adjustment,
-    record_notification_sent,
     record_error,
+    record_notification_sent,
 )
 from src.config import Config
-
 
 # =============================================================================
 # Property 8: Metrics Consistency
@@ -28,10 +27,10 @@ from src.config import Config
 class TestMetricsConsistency:
     """
     Property 8: Metrics Consistency
-    
+
     For any operation (temperature reading, adjustment, notification, API call),
     the corresponding metric counter SHALL be incremented exactly once.
-    
+
     Validates: Requirements 6.4
     """
 
@@ -42,12 +41,12 @@ class TestMetricsConsistency:
         """Adjustment count metric should match number of adjustments made."""
         state = AdjustmentState()
         base_time = datetime(2024, 1, 1, 12, 0, 0)
-        
+
         for i in range(num_adjustments):
             # Each adjustment is 2 hours apart (outside cooldown)
             timestamp = base_time + timedelta(hours=i * 2)
             state = record_adjustment(state, 72.0, 70.0, timestamp)
-        
+
         assert state.adjustment_count == num_adjustments
 
     @given(
@@ -57,12 +56,12 @@ class TestMetricsConsistency:
         """Notification count metric should match number of notifications sent."""
         state = NotificationState()
         base_time = datetime(2024, 1, 1, 12, 0, 0)
-        
+
         for i in range(num_notifications):
             # Each notification is 2 hours apart (outside rate limit)
             timestamp = base_time + timedelta(hours=i * 2)
             state = record_notification_sent(state, timestamp)
-        
+
         assert state.notification_count == num_notifications
 
     @given(
@@ -72,11 +71,11 @@ class TestMetricsConsistency:
         """Error count metric should match number of errors recorded."""
         state = ErrorState()
         base_time = datetime(2024, 1, 1, 12, 0, 0)
-        
+
         for i in range(num_errors):
             timestamp = base_time + timedelta(minutes=i)
             state = record_error(state, f"Error {i}", timestamp)
-        
+
         assert state.error_count == num_errors
 
     @given(
@@ -92,22 +91,22 @@ class TestMetricsConsistency:
         notif_state = NotificationState()
         error_state = ErrorState()
         base_time = datetime(2024, 1, 1, 12, 0, 0)
-        
+
         # Record adjustments
         for i in range(adjustments):
             timestamp = base_time + timedelta(hours=i * 2)
             adj_state = record_adjustment(adj_state, 72.0, 70.0, timestamp)
-        
+
         # Record notifications
         for i in range(notifications):
             timestamp = base_time + timedelta(hours=i * 2)
             notif_state = record_notification_sent(notif_state, timestamp)
-        
+
         # Record errors
         for i in range(errors):
             timestamp = base_time + timedelta(minutes=i)
             error_state = record_error(error_state, f"Error {i}", timestamp)
-        
+
         # Verify each metric is independent
         assert adj_state.adjustment_count == adjustments
         assert notif_state.notification_count == notifications
@@ -121,15 +120,15 @@ class TestHealthStatusMetrics:
         """Health status should reflect running state."""
         config = Config()
         agent = OrchestrationAgent(config)
-        
+
         # Not running initially
         health = agent.get_health_status()
         assert health["running"] is False
-        
+
         # Simulate running
         agent.running = True
         agent._start_time = datetime.now()
-        
+
         health = agent.get_health_status()
         assert health["running"] is True
 
@@ -146,15 +145,15 @@ class TestHealthStatusMetrics:
         agent = OrchestrationAgent(config)
         agent.running = True
         agent._start_time = datetime.now()
-        
+
         # Set error state
         agent.error_state = ErrorState(
             error_count=consecutive_errors,
             consecutive_errors=consecutive_errors,
         )
-        
+
         health = agent.get_health_status()
-        
+
         # Should be degraded if consecutive errors >= threshold
         if consecutive_errors >= error_threshold:
             assert health["status"] == "degraded"
@@ -165,13 +164,13 @@ class TestHealthStatusMetrics:
         """Uptime metric should increase over time."""
         config = Config()
         agent = OrchestrationAgent(config)
-        
+
         # Not started
         assert agent.get_uptime_seconds() == 0.0
-        
+
         # Simulate started 60 seconds ago
         agent._start_time = datetime.now() - timedelta(seconds=60)
-        
+
         uptime = agent.get_uptime_seconds()
         assert uptime >= 60.0
         assert uptime < 62.0  # Allow small margin
@@ -189,14 +188,14 @@ class TestHealthStatusMetrics:
         agent = OrchestrationAgent(config)
         agent.running = True
         agent._start_time = datetime.now()
-        
+
         # Set states
         agent.adjustment_state = AdjustmentState(adjustment_count=adjustment_count)
         agent.notification_state = NotificationState(notification_count=notification_count)
         agent.error_state = ErrorState(error_count=error_count)
-        
+
         health = agent.get_health_status()
-        
+
         assert health["adjustment_count"] == adjustment_count
         assert health["notification_count"] == notification_count
         assert health["error_count"] == error_count
@@ -209,12 +208,12 @@ class TestReadinessStatus:
         """Readiness should require NestAgent to be configured."""
         config = Config()
         agent = OrchestrationAgent(config)
-        
+
         # No nest agent
         readiness = agent.get_readiness_status()
         assert readiness["ready"] is False
         assert readiness["nest_agent_configured"] is False
-        
+
         # With nest agent
         agent.nest_agent = MagicMock()
         readiness = agent.get_readiness_status()
@@ -227,9 +226,9 @@ class TestReadinessStatus:
         agent = OrchestrationAgent(config)
         agent.nest_agent = MagicMock()
         agent.logging_agent = MagicMock()
-        
+
         readiness = agent.get_readiness_status()
-        
+
         assert "ready" in readiness
         assert "nest_agent_configured" in readiness
         assert "logging_agent_configured" in readiness
@@ -246,7 +245,7 @@ class TestTemperatureHistoryMetrics:
         """Temperature history should track all readings."""
         config = Config()
         agent = OrchestrationAgent(config)
-        
+
         # Simulate temperature readings
         for i in range(num_readings):
             temp_data = MagicMock()
@@ -256,9 +255,9 @@ class TestTemperatureHistoryMetrics:
             temp_data.timestamp = datetime.now() - timedelta(minutes=num_readings - i)
             temp_data.humidity = 50.0
             temp_data.hvac_mode = "heat"
-            
+
             agent._update_temperature_history(temp_data)
-        
+
         history = agent.get_temperature_history(hours=24)
         assert len(history) == num_readings
 
@@ -266,7 +265,7 @@ class TestTemperatureHistoryMetrics:
         """Temperature history should be limited to prevent memory issues."""
         config = Config()
         agent = OrchestrationAgent(config)
-        
+
         # Add more than max entries
         max_entries = 1440
         for i in range(max_entries + 100):
@@ -277,9 +276,9 @@ class TestTemperatureHistoryMetrics:
             temp_data.timestamp = datetime.now() - timedelta(minutes=max_entries + 100 - i)
             temp_data.humidity = 50.0
             temp_data.hvac_mode = "heat"
-            
+
             agent._update_temperature_history(temp_data)
-        
+
         # Should be limited to max_entries
         assert len(agent._temperature_history) == max_entries
 
@@ -290,14 +289,14 @@ class TestTemperatureHistoryMetrics:
         """Adjustment history should track all adjustments."""
         config = Config()
         agent = OrchestrationAgent(config)
-        
-        for i in range(num_adjustments):
+
+        for _i in range(num_adjustments):
             agent._record_adjustment_event(
                 previous_target=75.0,
                 new_target=70.0,
                 ambient=73.0,
             )
-        
+
         history = agent.get_adjustment_history(limit=100)
         assert len(history) == num_adjustments
 
@@ -305,14 +304,14 @@ class TestTemperatureHistoryMetrics:
         """Adjustment history should be limited."""
         config = Config()
         agent = OrchestrationAgent(config)
-        
+
         # Add more than max entries
-        for i in range(150):
+        for _i in range(150):
             agent._record_adjustment_event(
                 previous_target=75.0,
                 new_target=70.0,
                 ambient=73.0,
             )
-        
+
         # Should be limited to 100
         assert len(agent._adjustment_history) == 100

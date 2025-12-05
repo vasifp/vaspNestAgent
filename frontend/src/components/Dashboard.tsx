@@ -7,13 +7,11 @@
 import React, { useState, useEffect } from 'react'
 import { useQuery, useSubscription } from '@apollo/client'
 import {
-  CURRENT_TEMPERATURE,
   TEMPERATURE_TIMELINE,
   ADJUSTMENT_HISTORY,
   TEMPERATURE_SUBSCRIPTION,
   ADJUSTMENT_SUBSCRIPTION,
   type TemperatureReading,
-  type AdjustmentEvent,
 } from '../graphql/queries'
 import { TemperatureDisplay } from './TemperatureDisplay'
 import { TemperatureChart } from './TemperatureChart'
@@ -78,7 +76,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   )
 
   // Subscribe to adjustment events
-  const { data: adjSubData } = useSubscription(
+  useSubscription(
     ADJUSTMENT_SUBSCRIPTION,
     {
       onData: () => {

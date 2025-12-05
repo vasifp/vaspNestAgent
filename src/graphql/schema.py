@@ -13,12 +13,12 @@ TYPE_DEFS = """
         temperatureTimeline(hours: Int = 24): TemperatureTimeline!
         healthStatus: HealthStatus!
     }
-    
+
     type Subscription {
         temperatureUpdates: TemperatureReading!
         adjustmentEvents: AdjustmentEvent!
     }
-    
+
     type TemperatureReading {
         ambientTemperature: Float!
         targetTemperature: Float!
@@ -28,7 +28,7 @@ TYPE_DEFS = """
         hvacMode: String
         differential: Float!
     }
-    
+
     type AdjustmentEvent {
         id: ID!
         previousSetting: Float!
@@ -38,14 +38,14 @@ TYPE_DEFS = """
         timestamp: String!
         notificationSent: Boolean!
     }
-    
+
     type TemperatureTimeline {
         readings: [TemperatureReading!]!
         adjustments: [AdjustmentEvent!]!
         startTime: String!
         endTime: String!
     }
-    
+
     type HealthStatus {
         status: String!
         running: Boolean!
@@ -62,7 +62,7 @@ TYPE_DEFS = """
 
 def get_type_defs() -> str:
     """Get the GraphQL type definitions.
-    
+
     Returns:
         GraphQL SDL string.
     """

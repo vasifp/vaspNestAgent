@@ -11,20 +11,20 @@ and lifecycle of all system components including:
 Usage:
     # Production (with AWS Secrets Manager)
     python -m src.main
-    
+
     # Local development (environment variables only)
     python -m src.main --local
 
 Example:
     >>> import asyncio
     >>> from src.main import Application
-    >>> 
+    >>>
     >>> async def run():
     ...     app = Application()
     ...     await app.initialize(use_secrets_manager=False)
     ...     # Application is now ready
     ...     await app.stop()
-    >>> 
+    >>>
     >>> asyncio.run(run())
 
 Attributes:
@@ -37,16 +37,16 @@ See Also:
 """
 
 import asyncio
+import contextlib
 import signal
 import sys
-from typing import Optional
 
 import structlog
 
-from src.config import Config, ConfigurationError
-from src.agents.orchestration import OrchestrationAgent
-from src.agents.nest import NestAgent
 from src.agents.logging import LoggingAgent
+from src.agents.nest import NestAgent
+from src.agents.orchestration import OrchestrationAgent
+from src.config import Config, ConfigurationError
 from src.server.health import HealthServer
 
 logger = structlog.get_logger(__name__)
@@ -54,34 +54,34 @@ logger = structlog.get_logger(__name__)
 
 class Application:
     """Main application class coordinating all components.
-    
+
     This class manages the lifecycle of all vaspNestAgent components,
     including initialization, startup, and graceful shutdown.
-    
+
     The application follows this lifecycle:
-    
+
     1. **Initialization** (:meth:`initialize`):
        - Load configuration from environment/Secrets Manager
        - Create agent instances (NestAgent, LoggingAgent, OrchestrationAgent)
        - Create health server
-    
+
     2. **Startup** (:meth:`start`):
        - Start health server (background)
        - Start orchestration agent monitoring loop
        - Wait for shutdown signal
-    
+
     3. **Shutdown** (:meth:`stop`):
        - Stop orchestration agent gracefully
        - Stop health server
        - Close agent connections
-    
+
     Attributes:
         config: Application configuration instance.
         orchestration_agent: Main coordinator agent.
         nest_agent: Nest thermostat API agent.
         logging_agent: CloudWatch logging agent.
         health_server: HTTP health check server.
-    
+
     Example:
         >>> app = Application()
         >>> await app.initialize(use_secrets_manager=False)
@@ -91,20 +91,20 @@ class Application:
 
     def __init__(self) -> None:
         """Initialize the Application instance.
-        
+
         Creates an empty application with no components initialized.
         Call :meth:`initialize` to set up components.
         """
-        self.config: Optional[Config] = None
-        self.orchestration_agent: Optional[OrchestrationAgent] = None
-        self.nest_agent: Optional[NestAgent] = None
-        self.logging_agent: Optional[LoggingAgent] = None
-        self.health_server: Optional[HealthServer] = None
+        self.config: Config | None = None
+        self.orchestration_agent: OrchestrationAgent | None = None
+        self.nest_agent: NestAgent | None = None
+        self.logging_agent: LoggingAgent | None = None
+        self.health_server: HealthServer | None = None
         self._shutdown_event = asyncio.Event()
 
     async def initialize(self, use_secrets_manager: bool = True) -> None:
         """Initialize all application components.
-        
+
         Args:
             use_secrets_manager: Whether to load secrets from AWS Secrets Manager.
         """
@@ -154,10 +154,8 @@ class Application:
         health_task.cancel()
         agent_task.cancel()
 
-        try:
+        with contextlib.suppress(asyncio.CancelledError):
             await asyncio.gather(health_task, agent_task, return_exceptions=True)
-        except asyncio.CancelledError:
-            pass
 
     async def stop(self) -> None:
         """Stop all application components gracefully."""
@@ -181,7 +179,7 @@ class Application:
 
 def setup_signal_handlers(app: Application) -> None:
     """Set up signal handlers for graceful shutdown.
-    
+
     Args:
         app: Application instance.
     """
@@ -190,17 +188,17 @@ def setup_signal_handlers(app: Application) -> None:
         app.request_shutdown()
 
     loop = asyncio.get_event_loop()
-    
+
     for sig in (signal.SIGTERM, signal.SIGINT):
-        loop.add_signal_handler(sig, lambda s=sig: signal_handler(s))
+        loop.add_signal_handler(sig, lambda s=sig: signal_handler(s))  # type: ignore[misc]
 
 
 async def main(use_secrets_manager: bool = True) -> int:
     """Main entry point.
-    
+
     Args:
         use_secrets_manager: Whether to load secrets from AWS Secrets Manager.
-        
+
     Returns:
         Exit code (0 for success, 1 for error).
     """

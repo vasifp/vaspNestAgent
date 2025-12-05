@@ -4,13 +4,12 @@ This agent encapsulates all Nest thermostat interactions and exposes them
 as Strands-compatible tools for the Orchestration Agent.
 """
 
-from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 
 from src.config import Config
-from src.models.data import TemperatureData, AdjustmentResult
+from src.models.data import TemperatureData
 from src.services.nest_api import NestAPIClient, NestAPIError
 
 logger = structlog.get_logger(__name__)
@@ -24,26 +23,26 @@ class NestAgentError(Exception):
 
 class NestAgent:
     """Agent for Nest thermostat API interactions.
-    
+
     Registers Strands tools for reading thermostat data and adjusting
     temperature settings. Handles API errors and returns structured results.
     """
 
     def __init__(self, config: Config):
         """Initialize the NestAgent.
-        
+
         Args:
             config: Application configuration with Nest API credentials.
         """
         self.config = config
-        self._client: Optional[NestAPIClient] = None
+        self._client: NestAPIClient | None = None
         self._initialized = False
-        self._last_temperature: Optional[TemperatureData] = None
-        self._last_error: Optional[str] = None
+        self._last_temperature: TemperatureData | None = None
+        self._last_error: str | None = None
 
     async def initialize(self) -> None:
         """Initialize the agent and authenticate with Nest API.
-        
+
         Raises:
             NestAgentError: If initialization fails.
         """
@@ -62,7 +61,7 @@ class NestAgent:
         except Exception as e:
             self._last_error = str(e)
             logger.error("Failed to initialize NestAgent", error=str(e))
-            raise NestAgentError(f"Failed to initialize NestAgent: {e}")
+            raise NestAgentError(f"Failed to initialize NestAgent: {e}") from e
 
     async def close(self) -> None:
         """Close the agent and release resources."""
@@ -83,25 +82,25 @@ class NestAgent:
         return self._client is not None and self._client.is_connected
 
     @property
-    def last_temperature(self) -> Optional[TemperatureData]:
+    def last_temperature(self) -> TemperatureData | None:
         """Get the last temperature reading."""
         return self._last_temperature
 
     @property
-    def last_error(self) -> Optional[str]:
+    def last_error(self) -> str | None:
         """Get the last error message."""
         return self._last_error
 
     # Strands-compatible tool methods
-    
+
     async def get_temperature(self) -> dict[str, Any]:
         """Get current temperature data from the thermostat.
-        
+
         This is a Strands-compatible tool that returns structured data.
-        
+
         Returns:
             Dictionary with temperature data or error information.
-            
+
         Example return:
             {
                 "success": True,
@@ -126,13 +125,13 @@ class NestAgent:
             temperature_data = await self._client.get_thermostat_data()
             self._last_temperature = temperature_data
             self._last_error = None
-            
+
             logger.debug(
                 "Temperature reading obtained",
                 ambient=temperature_data.ambient_temperature,
                 target=temperature_data.target_temperature,
             )
-            
+
             return {
                 "success": True,
                 "data": temperature_data.to_dict(),
@@ -157,15 +156,15 @@ class NestAgent:
 
     async def set_temperature(self, target_fahrenheit: float) -> dict[str, Any]:
         """Set the thermostat target temperature.
-        
+
         This is a Strands-compatible tool that returns structured data.
-        
+
         Args:
             target_fahrenheit: Target temperature in Fahrenheit.
-            
+
         Returns:
             Dictionary with adjustment result or error information.
-            
+
         Example return:
             {
                 "success": True,
@@ -195,7 +194,7 @@ class NestAgent:
         try:
             result = await self._client.set_temperature(target_fahrenheit)
             self._last_error = None if result.success else result.error_message
-            
+
             if result.success:
                 logger.info(
                     "Temperature adjusted",
@@ -207,7 +206,7 @@ class NestAgent:
                     "Temperature adjustment failed",
                     error=result.error_message,
                 )
-            
+
             return {
                 "success": result.success,
                 "data": result.to_dict(),
@@ -232,7 +231,7 @@ class NestAgent:
 
     async def get_status(self) -> dict[str, Any]:
         """Get the current status of the NestAgent.
-        
+
         Returns:
             Dictionary with agent status information.
         """
@@ -244,10 +243,10 @@ class NestAgent:
         }
 
     # Tool registration for Strands SDK
-    
+
     def get_tools(self) -> list[dict[str, Any]]:
         """Get the list of tools provided by this agent.
-        
+
         Returns:
             List of tool definitions for Strands SDK registration.
         """

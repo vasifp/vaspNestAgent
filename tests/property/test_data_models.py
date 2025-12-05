@@ -4,19 +4,19 @@
 **Validates: Requirements 1.3**
 """
 
-from datetime import datetime, timezone
-from hypothesis import given, strategies as st, assume
+from datetime import datetime
+
+from hypothesis import assume, given
+from hypothesis import strategies as st
 
 from src.models.data import (
-    TemperatureData,
-    AdjustmentResult,
     AdjustmentEvent,
-    NotificationEvent,
-    LogEvent,
+    AdjustmentResult,
     EventType,
+    LogEvent,
     Severity,
+    TemperatureData,
 )
-
 
 # Custom strategies for generating valid data
 temperature_strategy = st.floats(min_value=-50.0, max_value=150.0, allow_nan=False, allow_infinity=False)
@@ -45,12 +45,12 @@ def test_temperature_data_round_trip(
     """
     **Feature: nest-thermostat-agent, Property 12: Temperature Data Parsing Round-Trip**
     **Validates: Requirements 1.3**
-    
+
     For any valid TemperatureData, serializing to JSON and deserializing back
     should produce an equivalent object with the same temperature values.
     """
     assume(len(thermostat_id.strip()) > 0)  # Ensure non-empty thermostat ID
-    
+
     original = TemperatureData(
         ambient_temperature=ambient,
         target_temperature=target,
@@ -59,18 +59,18 @@ def test_temperature_data_round_trip(
         humidity=humidity,
         hvac_mode=hvac_mode,
     )
-    
+
     # Round-trip through JSON
     json_str = original.to_json()
     restored = TemperatureData.from_json(json_str)
-    
+
     # Verify temperature values are preserved
     assert restored.ambient_temperature == original.ambient_temperature
     assert restored.target_temperature == original.target_temperature
     assert restored.thermostat_id == original.thermostat_id
     assert restored.humidity == original.humidity
     assert restored.hvac_mode == original.hvac_mode
-    
+
     # Timestamps should be equivalent (may lose timezone info in serialization)
     assert restored.timestamp.replace(tzinfo=None) == original.timestamp.replace(tzinfo=None)
 
@@ -94,11 +94,11 @@ def test_temperature_data_dict_round_trip(
     """
     **Feature: nest-thermostat-agent, Property 12: Temperature Data Parsing Round-Trip**
     **Validates: Requirements 1.3**
-    
+
     For any valid TemperatureData, converting to dict and back should preserve values.
     """
     assume(len(thermostat_id.strip()) > 0)
-    
+
     original = TemperatureData(
         ambient_temperature=ambient,
         target_temperature=target,
@@ -107,11 +107,11 @@ def test_temperature_data_dict_round_trip(
         humidity=humidity,
         hvac_mode=hvac_mode,
     )
-    
+
     # Round-trip through dict
     data_dict = original.to_dict()
     restored = TemperatureData.from_dict(data_dict)
-    
+
     assert restored.ambient_temperature == original.ambient_temperature
     assert restored.target_temperature == original.target_temperature
     assert restored.thermostat_id == original.thermostat_id
@@ -136,7 +136,7 @@ def test_adjustment_result_round_trip(
     """
     **Feature: nest-thermostat-agent, Property 12: Temperature Data Parsing Round-Trip**
     **Validates: Requirements 1.3**
-    
+
     For any valid AdjustmentResult, serializing and deserializing should preserve values.
     """
     original = AdjustmentResult(
@@ -146,10 +146,10 @@ def test_adjustment_result_round_trip(
         timestamp=timestamp,
         error_message=error_message,
     )
-    
+
     json_str = original.to_json()
     restored = AdjustmentResult.from_json(json_str)
-    
+
     assert restored.success == original.success
     assert restored.previous_target == original.previous_target
     assert restored.new_target == original.new_target
@@ -177,12 +177,12 @@ def test_adjustment_event_round_trip(
     """
     **Feature: nest-thermostat-agent, Property 12: Temperature Data Parsing Round-Trip**
     **Validates: Requirements 1.3**
-    
+
     For any valid AdjustmentEvent, serializing and deserializing should preserve values.
     """
     assume(len(thermostat_id.strip()) > 0)
     assume(len(trigger_reason.strip()) > 0)
-    
+
     original = AdjustmentEvent(
         previous_setting=previous_setting,
         new_setting=new_setting,
@@ -192,10 +192,10 @@ def test_adjustment_event_round_trip(
         thermostat_id=thermostat_id,
         notification_sent=notification_sent,
     )
-    
+
     json_str = original.to_json()
     restored = AdjustmentEvent.from_json(json_str)
-    
+
     assert restored.previous_setting == original.previous_setting
     assert restored.new_setting == original.new_setting
     assert restored.ambient_temperature == original.ambient_temperature
@@ -220,7 +220,7 @@ def test_log_event_round_trip(
     """
     **Feature: nest-thermostat-agent, Property 12: Temperature Data Parsing Round-Trip**
     **Validates: Requirements 1.3**
-    
+
     For any valid LogEvent, serializing and deserializing should preserve values.
     """
     original = LogEvent(
@@ -230,10 +230,10 @@ def test_log_event_round_trip(
         data={"test_key": "test_value", "number": 42},
         message=message,
     )
-    
+
     json_str = original.to_json()
     restored = LogEvent.from_json(json_str)
-    
+
     assert restored.event_type == original.event_type
     assert restored.severity == original.severity
     assert restored.data == original.data

@@ -7,12 +7,12 @@ with exponential backoff retry logic.
 import asyncio
 import random
 from datetime import datetime, timedelta
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 import structlog
 
-from src.models.data import TemperatureData, AdjustmentResult
+from src.models.data import AdjustmentResult, TemperatureData
 
 logger = structlog.get_logger(__name__)
 
@@ -20,7 +20,7 @@ logger = structlog.get_logger(__name__)
 class NestAPIError(Exception):
     """Base exception for Nest API errors."""
 
-    def __init__(self, message: str, status_code: Optional[int] = None):
+    def __init__(self, message: str, status_code: int | None = None):
         super().__init__(message)
         self.status_code = status_code
 
@@ -39,14 +39,14 @@ class NestRateLimitError(NestAPIError):
 
 class NestAPIClient:
     """Client for Google Nest Smart Device Management API.
-    
+
     Handles OAuth2 authentication, token refresh, and API calls with
     exponential backoff retry logic.
     """
 
     OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token"
     SDM_API_BASE = "https://smartdevicemanagement.googleapis.com/v1"
-    
+
     # Retry configuration
     MAX_CONNECTION_RETRIES = 5
     MAX_ADJUSTMENT_RETRIES = 3
@@ -61,7 +61,7 @@ class NestAPIClient:
         project_id: str,
     ):
         """Initialize the Nest API client.
-        
+
         Args:
             client_id: OAuth2 client ID
             client_secret: OAuth2 client secret
@@ -72,11 +72,11 @@ class NestAPIClient:
         self.client_secret = client_secret
         self.refresh_token = refresh_token
         self.project_id = project_id
-        
-        self._access_token: Optional[str] = None
-        self._token_expiry: Optional[datetime] = None
-        self._http_client: Optional[httpx.AsyncClient] = None
-        self._thermostat_id: Optional[str] = None
+
+        self._access_token: str | None = None
+        self._token_expiry: datetime | None = None
+        self._http_client: httpx.AsyncClient | None = None
+        self._thermostat_id: str | None = None
 
     async def __aenter__(self) -> "NestAPIClient":
         """Async context manager entry."""
@@ -91,10 +91,10 @@ class NestAPIClient:
 
     async def authenticate(self) -> None:
         """Authenticate with Google OAuth2 and obtain access token.
-        
+
         Uses the refresh token to obtain a new access token.
         Implements exponential backoff retry on failure.
-        
+
         Raises:
             NestAuthenticationError: If authentication fails after retries.
         """
@@ -117,7 +117,7 @@ class NestAPIClient:
                 else:
                     raise NestAuthenticationError(
                         f"Failed to authenticate after {self.MAX_CONNECTION_RETRIES} attempts: {e}"
-                    )
+                    ) from e
 
     async def _refresh_access_token(self) -> None:
         """Refresh the OAuth2 access token."""
@@ -161,12 +161,12 @@ class NestAPIClient:
 
     async def get_thermostat_data(self) -> TemperatureData:
         """Get current temperature data from the thermostat.
-        
+
         Implements exponential backoff retry on failure.
-        
+
         Returns:
             TemperatureData with current ambient and target temperatures.
-            
+
         Raises:
             NestAPIError: If the API call fails after retries.
         """
@@ -198,15 +198,15 @@ class NestAPIClient:
                 else:
                     raise NestAPIError(
                         f"Failed to get thermostat data after {self.MAX_CONNECTION_RETRIES} attempts: {e}"
-                    )
-        
+                    ) from e
+
         # Should never reach here, but satisfy type checker
         raise NestAPIError("Unexpected error in get_thermostat_data")
 
     async def _fetch_thermostat_data(self) -> TemperatureData:
         """Fetch thermostat data from the API."""
         await self._ensure_authenticated()
-        
+
         if not self._http_client:
             self._http_client = httpx.AsyncClient(timeout=30.0)
 
@@ -216,22 +216,22 @@ class NestAPIClient:
             response = await self._http_client.get(
                 devices_url, headers=self._get_headers()
             )
-            
+
             if response.status_code == 429:
                 raise NestRateLimitError("Rate limited by Nest API", status_code=429)
-            
+
             if response.status_code != 200:
                 raise NestAPIError(
                     f"Failed to list devices: {response.status_code} - {response.text}",
                     status_code=response.status_code,
                 )
-            
+
             devices = response.json().get("devices", [])
             for device in devices:
                 if "sdm.devices.types.THERMOSTAT" in device.get("type", ""):
                     self._thermostat_id = device["name"]
                     break
-            
+
             if not self._thermostat_id:
                 raise NestAPIError("No thermostat found in the account")
 
@@ -252,7 +252,7 @@ class NestAPIClient:
 
         data = response.json()
         traits = data.get("traits", {})
-        
+
         # Extract temperature data
         temperature_trait = traits.get("sdm.devices.traits.Temperature", {})
         thermostat_trait = traits.get("sdm.devices.traits.ThermostatTemperatureSetpoint", {})
@@ -284,12 +284,12 @@ class NestAPIClient:
 
     async def set_temperature(self, target_fahrenheit: float) -> AdjustmentResult:
         """Set the thermostat target temperature.
-        
+
         Implements exponential backoff retry on failure (max 3 attempts).
-        
+
         Args:
             target_fahrenheit: Target temperature in Fahrenheit.
-            
+
         Returns:
             AdjustmentResult indicating success or failure.
         """
@@ -343,7 +343,7 @@ class NestAPIClient:
     async def _set_temperature_api(self, target_fahrenheit: float) -> None:
         """Make the API call to set temperature."""
         await self._ensure_authenticated()
-        
+
         if not self._http_client:
             self._http_client = httpx.AsyncClient(timeout=30.0)
 
@@ -355,10 +355,10 @@ class NestAPIClient:
 
         # Execute command to set temperature
         command_url = f"{self.SDM_API_BASE}/{self._thermostat_id}:executeCommand"
-        
+
         # Determine if we're in heat or cool mode
         current_data = await self._fetch_thermostat_data()
-        
+
         if current_data.hvac_mode == "COOL":
             command = "sdm.devices.commands.ThermostatTemperatureSetpoint.SetCool"
             params = {"coolCelsius": target_celsius}
@@ -388,11 +388,11 @@ class NestAPIClient:
         self, attempt: int, base_delay: float | None = None
     ) -> float:
         """Calculate exponential backoff delay with jitter.
-        
+
         Args:
             attempt: Current attempt number (0-indexed).
             base_delay: Base delay in seconds (default: BASE_RETRY_DELAY).
-            
+
         Returns:
             Delay in seconds before next retry.
         """

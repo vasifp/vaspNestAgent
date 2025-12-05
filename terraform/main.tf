@@ -69,8 +69,8 @@ module "ecr" {
 }
 
 # Secrets Manager Module
-module "secrets" {
-  source = "./modules/secrets"
+module "secretsmanager" {
+  source = "./modules/secretsmanager"
 
   nest_client_id            = var.nest_client_id
   nest_client_secret        = var.nest_client_secret

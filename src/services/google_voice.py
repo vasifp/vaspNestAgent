@@ -7,7 +7,6 @@ import asyncio
 import random
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 import httpx
 import structlog
@@ -34,9 +33,9 @@ class GoogleVoiceRateLimitError(GoogleVoiceError):
 class SMSResult:
     """Result of an SMS send operation."""
     success: bool
-    message_id: Optional[str] = None
+    message_id: str | None = None
     timestamp: datetime = None
-    error_message: Optional[str] = None
+    error_message: str | None = None
     retry_count: int = 0
 
     def __post_init__(self):
@@ -50,12 +49,12 @@ def calculate_backoff(
     max_delay: float = 60.0,
 ) -> float:
     """Calculate exponential backoff delay with jitter.
-    
+
     Args:
         attempt: Current attempt number (0-indexed).
         base_delay: Base delay in seconds.
         max_delay: Maximum delay in seconds.
-        
+
     Returns:
         Delay in seconds with jitter applied.
     """
@@ -66,13 +65,13 @@ def calculate_backoff(
 
 class GoogleVoiceClient:
     """Client for Google Voice SMS API.
-    
+
     Handles authentication and SMS sending with retry logic.
     """
 
     # API endpoints (Google Voice uses internal APIs)
     BASE_URL = "https://voice.google.com"
-    
+
     # Retry configuration
     MAX_RETRIES = 3
     BASE_DELAY = 1.0
@@ -85,7 +84,7 @@ class GoogleVoiceClient:
         max_retries: int = 3,
     ):
         """Initialize the Google Voice client.
-        
+
         Args:
             credentials: Google Voice credentials (OAuth token or service account).
             phone_number: Target phone number for notifications.
@@ -94,7 +93,7 @@ class GoogleVoiceClient:
         self.credentials = credentials
         self.phone_number = phone_number
         self.max_retries = max_retries
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
         self._retry_count = 0
 
     async def _get_client(self) -> httpx.AsyncClient:
@@ -117,18 +116,18 @@ class GoogleVoiceClient:
 
     async def send_sms(self, message: str) -> SMSResult:
         """Send an SMS message to the configured phone number.
-        
+
         Property 3: Retry Limit Compliance
         The retry count SHALL NOT exceed the configured maximum (3 for notifications).
-        
+
         Args:
             message: Message content to send.
-            
+
         Returns:
             SMSResult with success status and details.
         """
         self._retry_count = 0
-        last_error: Optional[str] = None
+        last_error: str | None = None
 
         for attempt in range(self.max_retries + 1):
             try:
@@ -194,13 +193,13 @@ class GoogleVoiceClient:
 
     async def _send_sms_attempt(self, message: str) -> SMSResult:
         """Attempt to send an SMS message.
-        
+
         Args:
             message: Message content to send.
-            
+
         Returns:
             SMSResult on success.
-            
+
         Raises:
             GoogleVoiceError: On API errors.
         """
@@ -220,10 +219,10 @@ class GoogleVoiceClient:
 
             if response.status_code == 401:
                 raise GoogleVoiceAuthError("Invalid or expired credentials")
-            
+
             if response.status_code == 429:
                 raise GoogleVoiceRateLimitError("Rate limit exceeded")
-            
+
             if response.status_code >= 400:
                 raise GoogleVoiceError(
                     f"API error: {response.status_code} - {response.text}"
@@ -245,9 +244,9 @@ class GoogleVoiceClient:
             )
 
         except httpx.TimeoutException as e:
-            raise GoogleVoiceError(f"Request timeout: {e}")
+            raise GoogleVoiceError(f"Request timeout: {e}") from e
         except httpx.RequestError as e:
-            raise GoogleVoiceError(f"Request error: {e}")
+            raise GoogleVoiceError(f"Request error: {e}") from e
 
     def get_retry_count(self) -> int:
         """Get the number of retries from the last operation."""
@@ -267,16 +266,16 @@ def format_adjustment_notification(
     ambient: float,
 ) -> str:
     """Format a temperature adjustment notification message.
-    
+
     Property 4: Notification Content Completeness
-    The message SHALL contain the previous temperature, new temperature, 
+    The message SHALL contain the previous temperature, new temperature,
     and current ambient temperature.
-    
+
     Args:
         previous_target: Previous target temperature in Fahrenheit.
         new_target: New target temperature in Fahrenheit.
         ambient: Current ambient temperature in Fahrenheit.
-        
+
     Returns:
         Formatted notification message.
     """
@@ -294,12 +293,12 @@ def format_error_alert(
     last_error: str,
 ) -> str:
     """Format an error threshold alert message.
-    
+
     Args:
         error_count: Current error count.
         threshold: Error threshold that was exceeded.
         last_error: Description of the last error.
-        
+
     Returns:
         Formatted alert message.
     """

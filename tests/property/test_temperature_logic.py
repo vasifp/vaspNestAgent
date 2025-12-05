@@ -5,19 +5,18 @@ Tests Property 1 (Temperature Adjustment Logic) and Property 2 (Cooldown Period 
 
 from datetime import datetime, timedelta
 
-import pytest
-from hypothesis import given, strategies as st, assume, settings
+from hypothesis import given
+from hypothesis import strategies as st
 
 from src.agents.orchestration import (
     AdjustmentState,
-    should_adjust_temperature,
     calculate_new_target,
-    is_in_cooldown,
     get_cooldown_remaining,
-    should_adjust_with_cooldown,
+    is_in_cooldown,
     record_adjustment,
+    should_adjust_temperature,
+    should_adjust_with_cooldown,
 )
-
 
 # =============================================================================
 # Property 1: Temperature Adjustment Logic
@@ -26,12 +25,12 @@ from src.agents.orchestration import (
 class TestTemperatureAdjustmentLogic:
     """
     Property 1: Temperature Adjustment Logic
-    
-    For any ambient temperature and target temperature pair where 
-    (target - ambient) < 5°F, the system SHALL compute a new target 
-    of (target - 5)°F. For any pair where (target - ambient) >= 5°F, 
+
+    For any ambient temperature and target temperature pair where
+    (target - ambient) < 5°F, the system SHALL compute a new target
+    of (target - 5)°F. For any pair where (target - ambient) >= 5°F,
     no adjustment SHALL be made.
-    
+
     Validates: Requirements 2.1
     """
 
@@ -45,9 +44,9 @@ class TestTemperatureAdjustmentLogic:
         """When (target - ambient) < 5, adjustment should be needed."""
         threshold = 5.0
         differential = target - ambient
-        
+
         result = should_adjust_temperature(ambient, target, threshold)
-        
+
         if differential < threshold:
             assert result is True, (
                 f"Expected adjustment needed when differential ({differential:.2f}) "
@@ -68,9 +67,9 @@ class TestTemperatureAdjustmentLogic:
         threshold = 5.0
         adjustment = 5.0
         differential = target - ambient
-        
+
         new_target = calculate_new_target(ambient, target, threshold, adjustment)
-        
+
         if differential < threshold:
             expected = target - adjustment
             assert abs(new_target - expected) < 0.001, (
@@ -92,10 +91,10 @@ class TestTemperatureAdjustmentLogic:
         # Test case where adjustment is definitely needed
         target = 75.0
         ambient = target - (threshold / 2)  # Differential is half the threshold
-        
+
         result = should_adjust_temperature(ambient, target, threshold)
         new_target = calculate_new_target(ambient, target, threshold, adjustment)
-        
+
         assert result is True
         assert abs(new_target - (target - adjustment)) < 0.001
 
@@ -106,11 +105,11 @@ class TestTemperatureAdjustmentLogic:
         """When differential equals threshold exactly, no adjustment should be made."""
         threshold = 5.0
         ambient = target - threshold  # Differential exactly equals threshold
-        
+
         result = should_adjust_temperature(ambient, target, threshold)
-        
+
         assert result is False, (
-            f"Expected no adjustment when differential equals threshold exactly"
+            "Expected no adjustment when differential equals threshold exactly"
         )
 
     @given(
@@ -121,9 +120,9 @@ class TestTemperatureAdjustmentLogic:
         """When differential is just below threshold, adjustment should be made."""
         threshold = 5.0
         ambient = target - threshold + epsilon  # Differential just below threshold
-        
+
         result = should_adjust_temperature(ambient, target, threshold)
-        
+
         assert result is True, (
             f"Expected adjustment when differential ({threshold - epsilon:.4f}) "
             f"is just below threshold ({threshold})"
@@ -137,11 +136,11 @@ class TestTemperatureAdjustmentLogic:
 class TestCooldownPeriodEnforcement:
     """
     Property 2: Cooldown Period Enforcement
-    
-    For any sequence of temperature readings within the cooldown period 
-    after an adjustment, the system SHALL NOT make additional adjustments 
+
+    For any sequence of temperature readings within the cooldown period
+    after an adjustment, the system SHALL NOT make additional adjustments
     regardless of temperature differential.
-    
+
     Validates: Requirements 2.5
     """
 
@@ -151,19 +150,19 @@ class TestCooldownPeriodEnforcement:
     def test_no_adjustment_during_cooldown(self, seconds_since_adjustment: int):
         """No adjustment should be allowed during cooldown period."""
         cooldown_period = 1800  # 30 minutes
-        
+
         adjustment_time = datetime(2024, 1, 1, 12, 0, 0)
         current_time = adjustment_time + timedelta(seconds=seconds_since_adjustment)
-        
+
         state = AdjustmentState(
             last_adjustment_time=adjustment_time,
             last_adjustment_ambient=72.0,
             last_adjustment_target=70.0,
             adjustment_count=1,
         )
-        
+
         result = is_in_cooldown(state, current_time, cooldown_period)
-        
+
         assert result is True, (
             f"Expected to be in cooldown {seconds_since_adjustment}s after adjustment "
             f"(cooldown period is {cooldown_period}s)"
@@ -175,19 +174,19 @@ class TestCooldownPeriodEnforcement:
     def test_adjustment_allowed_after_cooldown(self, seconds_after_cooldown: int):
         """Adjustment should be allowed after cooldown period expires."""
         cooldown_period = 1800  # 30 minutes
-        
+
         adjustment_time = datetime(2024, 1, 1, 12, 0, 0)
         current_time = adjustment_time + timedelta(seconds=cooldown_period + seconds_after_cooldown)
-        
+
         state = AdjustmentState(
             last_adjustment_time=adjustment_time,
             last_adjustment_ambient=72.0,
             last_adjustment_target=70.0,
             adjustment_count=1,
         )
-        
+
         result = is_in_cooldown(state, current_time, cooldown_period)
-        
+
         assert result is False, (
             f"Expected cooldown to be over {cooldown_period + seconds_after_cooldown}s "
             f"after adjustment (cooldown period is {cooldown_period}s)"
@@ -197,9 +196,9 @@ class TestCooldownPeriodEnforcement:
         """No cooldown should apply if no adjustment has been made."""
         state = AdjustmentState()  # No prior adjustment
         current_time = datetime.now()
-        
+
         result = is_in_cooldown(state, current_time, cooldown_period=1800)
-        
+
         assert result is False
 
     @given(
@@ -208,20 +207,20 @@ class TestCooldownPeriodEnforcement:
     def test_configurable_cooldown_period(self, cooldown_period: int):
         """Cooldown period should be configurable."""
         adjustment_time = datetime(2024, 1, 1, 12, 0, 0)
-        
+
         state = AdjustmentState(
             last_adjustment_time=adjustment_time,
             adjustment_count=1,
         )
-        
+
         # Just before cooldown ends
         time_before = adjustment_time + timedelta(seconds=cooldown_period - 1)
         assert is_in_cooldown(state, time_before, cooldown_period) is True
-        
+
         # Exactly at cooldown end
         time_at = adjustment_time + timedelta(seconds=cooldown_period)
         assert is_in_cooldown(state, time_at, cooldown_period) is False
-        
+
         # After cooldown ends
         time_after = adjustment_time + timedelta(seconds=cooldown_period + 1)
         assert is_in_cooldown(state, time_after, cooldown_period) is False
@@ -232,17 +231,17 @@ class TestCooldownPeriodEnforcement:
     def test_cooldown_remaining_calculation(self, seconds_since_adjustment: int):
         """Cooldown remaining should be calculated correctly."""
         cooldown_period = 1800
-        
+
         adjustment_time = datetime(2024, 1, 1, 12, 0, 0)
         current_time = adjustment_time + timedelta(seconds=seconds_since_adjustment)
-        
+
         state = AdjustmentState(
             last_adjustment_time=adjustment_time,
             adjustment_count=1,
         )
-        
+
         remaining = get_cooldown_remaining(state, current_time, cooldown_period)
-        
+
         if seconds_since_adjustment < cooldown_period:
             expected = cooldown_period - seconds_since_adjustment
             assert remaining == expected, (
@@ -272,15 +271,15 @@ class TestCombinedAdjustmentLogic:
         """Combined logic should respect both temperature and cooldown rules."""
         threshold = 5.0
         cooldown_period = 1800
-        
+
         adjustment_time = datetime(2024, 1, 1, 12, 0, 0)
         current_time = adjustment_time + timedelta(seconds=seconds_since_adjustment)
-        
+
         state = AdjustmentState(
             last_adjustment_time=adjustment_time,
             adjustment_count=1,
         )
-        
+
         result = should_adjust_with_cooldown(
             ambient=ambient,
             target=target,
@@ -289,10 +288,10 @@ class TestCombinedAdjustmentLogic:
             threshold=threshold,
             cooldown_period=cooldown_period,
         )
-        
+
         in_cooldown = seconds_since_adjustment < cooldown_period
         needs_adjustment = (target - ambient) < threshold
-        
+
         if in_cooldown:
             # During cooldown, never adjust regardless of temperature
             assert result is False, (
@@ -312,23 +311,23 @@ class TestCombinedAdjustmentLogic:
         """Multiple readings during cooldown should all be rejected."""
         threshold = 5.0
         cooldown_period = 1800
-        
+
         adjustment_time = datetime(2024, 1, 1, 12, 0, 0)
-        
+
         state = AdjustmentState(
             last_adjustment_time=adjustment_time,
             adjustment_count=1,
         )
-        
+
         # Generate readings that would normally trigger adjustment
         for i in range(num_readings):
             # Each reading is 60 seconds apart, all within cooldown
             current_time = adjustment_time + timedelta(seconds=60 * (i + 1))
-            
+
             # Temperature that would trigger adjustment
             ambient = 73.0
             target = 75.0  # Differential = 2, which is < 5
-            
+
             result = should_adjust_with_cooldown(
                 ambient=ambient,
                 target=target,
@@ -337,7 +336,7 @@ class TestCombinedAdjustmentLogic:
                 threshold=threshold,
                 cooldown_period=cooldown_period,
             )
-            
+
             assert result is False, (
                 f"Reading {i+1} at {60 * (i + 1)}s should be rejected during cooldown"
             )
@@ -358,9 +357,9 @@ class TestAdjustmentStateManagement:
         """Recording an adjustment should update all state fields."""
         initial_state = AdjustmentState()
         timestamp = datetime(2024, 1, 1, 12, 0, 0)
-        
+
         new_state = record_adjustment(initial_state, ambient, target, timestamp)
-        
+
         assert new_state.last_adjustment_time == timestamp
         assert new_state.last_adjustment_ambient == ambient
         assert new_state.last_adjustment_target == target
@@ -372,17 +371,17 @@ class TestAdjustmentStateManagement:
     def test_adjustment_count_increments(self, num_adjustments: int):
         """Adjustment count should increment with each adjustment."""
         state = AdjustmentState()
-        
+
         for i in range(num_adjustments):
             timestamp = datetime(2024, 1, 1, 12, 0, 0) + timedelta(hours=i)
             state = record_adjustment(state, 72.0, 70.0, timestamp)
-        
+
         assert state.adjustment_count == num_adjustments
 
     def test_initial_state_has_no_adjustment(self):
         """Initial state should have no prior adjustment."""
         state = AdjustmentState()
-        
+
         assert state.last_adjustment_time is None
         assert state.last_adjustment_ambient is None
         assert state.last_adjustment_target is None

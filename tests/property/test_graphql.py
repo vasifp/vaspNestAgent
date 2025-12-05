@@ -3,11 +3,10 @@
 Tests Property 14 (GraphQL Response Completeness).
 """
 
-from datetime import datetime, timedelta
-from unittest.mock import MagicMock
+from datetime import datetime
 
-import pytest
-from hypothesis import given, strategies as st, assume, settings
+from hypothesis import given
+from hypothesis import strategies as st
 
 
 # Define the formatting functions locally to avoid ariadne import
@@ -15,7 +14,7 @@ def _format_temperature_reading(data: dict) -> dict:
     """Format a temperature reading for GraphQL response."""
     ambient = data.get("ambient_temperature", 0)
     target = data.get("target_temperature", 0)
-    
+
     return {
         "ambientTemperature": ambient,
         "targetTemperature": target,
@@ -47,10 +46,10 @@ def _format_adjustment_event(data: dict) -> dict:
 class TestGraphQLResponseCompleteness:
     """
     Property 14: GraphQL Response Completeness
-    
-    For any GraphQL query for temperature data, the response SHALL contain 
+
+    For any GraphQL query for temperature data, the response SHALL contain
     all required fields (ambientTemperature, targetTemperature, thermostatId, timestamp).
-    
+
     Validates: Requirements 15.1, 17.3
     """
 
@@ -71,15 +70,15 @@ class TestGraphQLResponseCompleteness:
             "humidity": 50.0,
             "hvac_mode": "heat",
         }
-        
+
         result = _format_temperature_reading(data)
-        
+
         # Check required fields
         assert "ambientTemperature" in result
         assert "targetTemperature" in result
         assert "thermostatId" in result
         assert "timestamp" in result
-        
+
         # Check values
         assert result["ambientTemperature"] == ambient
         assert result["targetTemperature"] == target
@@ -99,9 +98,9 @@ class TestGraphQLResponseCompleteness:
             "thermostat_id": "test",
             "timestamp": datetime.now().isoformat(),
         }
-        
+
         result = _format_temperature_reading(data)
-        
+
         assert "differential" in result
         expected_differential = target - ambient
         assert abs(result["differential"] - expected_differential) < 0.001
@@ -125,9 +124,9 @@ class TestGraphQLResponseCompleteness:
             "humidity": humidity,
             "hvac_mode": hvac_mode,
         }
-        
+
         result = _format_temperature_reading(data)
-        
+
         # Optional fields should be present (may be None)
         assert "humidity" in result
         assert "hvacMode" in result
@@ -156,9 +155,9 @@ class TestAdjustmentEventCompleteness:
             "timestamp": datetime.now().isoformat(),
             "notification_sent": True,
         }
-        
+
         result = _format_adjustment_event(data)
-        
+
         # Check required fields
         assert "id" in result
         assert "previousSetting" in result
@@ -167,7 +166,7 @@ class TestAdjustmentEventCompleteness:
         assert "triggerReason" in result
         assert "timestamp" in result
         assert "notificationSent" in result
-        
+
         # Check values
         assert result["previousSetting"] == previous
         assert result["newSetting"] == new
@@ -187,9 +186,9 @@ class TestAdjustmentEventCompleteness:
             "timestamp": datetime.now().isoformat(),
             "notification_sent": notification_sent,
         }
-        
+
         result = _format_adjustment_event(data)
-        
+
         assert result["notificationSent"] == notification_sent
 
 
@@ -206,11 +205,11 @@ class TestGraphQLFieldNaming:
             "humidity": 50.0,
             "hvac_mode": "heat",
         }
-        
+
         result = _format_temperature_reading(data)
-        
+
         # All keys should be camelCase
-        for key in result.keys():
+        for key in result:
             # Check no underscores (snake_case indicator)
             assert "_" not in key, f"Field '{key}' should be camelCase"
 
@@ -225,11 +224,11 @@ class TestGraphQLFieldNaming:
             "timestamp": datetime.now().isoformat(),
             "notification_sent": True,
         }
-        
+
         result = _format_adjustment_event(data)
-        
+
         # All keys should be camelCase
-        for key in result.keys():
+        for key in result:
             assert "_" not in key, f"Field '{key}' should be camelCase"
 
 
@@ -239,9 +238,9 @@ class TestGraphQLDefaultValues:
     def test_temperature_reading_handles_missing_data(self):
         """Temperature reading should handle missing data gracefully."""
         data = {}  # Empty data
-        
+
         result = _format_temperature_reading(data)
-        
+
         # Should have default values
         assert result["ambientTemperature"] == 0
         assert result["targetTemperature"] == 0
@@ -251,9 +250,9 @@ class TestGraphQLDefaultValues:
     def test_adjustment_event_handles_missing_data(self):
         """Adjustment event should handle missing data gracefully."""
         data = {}  # Empty data
-        
+
         result = _format_adjustment_event(data)
-        
+
         # Should have default values
         assert result["id"] == "unknown"
         assert result["previousSetting"] == 0

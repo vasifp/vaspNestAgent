@@ -21,35 +21,35 @@ Classes:
 Example:
     >>> from src.models.data import TemperatureData
     >>> from datetime import datetime
-    >>> 
+    >>>
     >>> reading = TemperatureData(
     ...     ambient_temperature=72.5,
     ...     target_temperature=75.0,
     ...     thermostat_id="device-123",
     ...     timestamp=datetime.now(),
     ... )
-    >>> 
+    >>>
     >>> # Serialize to JSON
     >>> json_str = reading.to_json()
-    >>> 
+    >>>
     >>> # Deserialize from JSON
     >>> restored = TemperatureData.from_json(json_str)
     >>> assert restored.ambient_temperature == 72.5
 """
 
-from dataclasses import dataclass, field, asdict
+import json
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Any
-import json
+from typing import Any
 
 
 class EventType(Enum):
     """Event types for logging.
-    
+
     These event types categorize log entries for filtering and analysis
     in CloudWatch Logs and the monitoring dashboard.
-    
+
     Attributes:
         TEMPERATURE_READING: Regular temperature poll result.
         TEMPERATURE_ADJUSTMENT: Target temperature was changed.
@@ -75,10 +75,10 @@ class EventType(Enum):
 
 class Severity(Enum):
     """Log severity levels.
-    
+
     Standard severity levels for categorizing log entries.
     Maps to CloudWatch Logs severity for filtering.
-    
+
     Attributes:
         DEBUG: Detailed debugging information.
         INFO: General informational messages.
@@ -97,13 +97,13 @@ class Severity(Enum):
 @dataclass
 class TemperatureData:
     """Temperature reading from Nest thermostat.
-    
+
     Represents a single temperature reading from the Nest Smart Device
     Management API, including ambient temperature, target setting, and
     optional humidity and HVAC mode.
-    
+
     All temperatures are in Fahrenheit.
-    
+
     Attributes:
         ambient_temperature: Current room temperature in °F.
         target_temperature: Current target/setpoint temperature in °F.
@@ -111,7 +111,7 @@ class TemperatureData:
         timestamp: When the reading was taken.
         humidity: Relative humidity percentage (0-100), if available.
         hvac_mode: Current HVAC mode (HEAT, COOL, OFF, AUTO), if available.
-    
+
     Example:
         >>> data = TemperatureData(
         ...     ambient_temperature=72.5,
@@ -129,8 +129,8 @@ class TemperatureData:
     target_temperature: float  # Fahrenheit
     thermostat_id: str
     timestamp: datetime
-    humidity: Optional[float] = None
-    hvac_mode: Optional[str] = None
+    humidity: float | None = None
+    hvac_mode: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -175,7 +175,7 @@ class AdjustmentResult:
     previous_target: float
     new_target: float
     timestamp: datetime
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -222,7 +222,7 @@ class AdjustmentEvent:
     thermostat_id: str
     event_type: EventType = field(default=EventType.TEMPERATURE_ADJUSTMENT)
     notification_sent: bool = False
-    id: Optional[str] = None
+    id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -274,10 +274,10 @@ class NotificationEvent:
     success: bool
     timestamp: datetime
     event_type: EventType = field(default=EventType.NOTIFICATION_SENT)
-    error_message: Optional[str] = None
-    previous_temperature: Optional[float] = None
-    new_temperature: Optional[float] = None
-    ambient_temperature: Optional[float] = None
+    error_message: str | None = None
+    previous_temperature: float | None = None
+    new_temperature: float | None = None
+    ambient_temperature: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -335,7 +335,7 @@ class LogEvent:
     event_type: EventType
     severity: Severity
     data: dict[str, Any]
-    message: Optional[str] = None
+    message: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -376,7 +376,7 @@ class HealthResponse:
 
     status: str  # "healthy" or "degraded"
     nest_api_connected: bool
-    last_temperature_reading: Optional[datetime]
+    last_temperature_reading: datetime | None
     uptime_seconds: float
     error_count: int = 0
 
@@ -400,7 +400,7 @@ class ReadinessResponse:
     ready: bool
     config_loaded: bool
     agents_initialized: bool
-    details: Optional[str] = None
+    details: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
