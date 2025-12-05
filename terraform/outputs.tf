@@ -18,13 +18,24 @@ output "private_subnet_ids" {
 }
 
 # EKS Outputs
-output "eks_cluster_name" {
+output "cluster_name" {
   description = "EKS cluster name"
   value       = module.eks.cluster_name
 }
 
-output "eks_cluster_endpoint" {
+output "cluster_endpoint" {
   description = "EKS cluster endpoint"
+  value       = module.eks.cluster_endpoint
+}
+
+# Aliases for backward compatibility
+output "eks_cluster_name" {
+  description = "EKS cluster name (alias)"
+  value       = module.eks.cluster_name
+}
+
+output "eks_cluster_endpoint" {
+  description = "EKS cluster endpoint (alias)"
   value       = module.eks.cluster_endpoint
 }
 
@@ -53,6 +64,11 @@ output "cloudwatch_log_group" {
 output "cloudwatch_dashboard_name" {
   description = "CloudWatch dashboard name"
   value       = module.cloudwatch.dashboard_name
+}
+
+output "cloudwatch_dashboard_url" {
+  description = "CloudWatch dashboard URL"
+  value       = "https://${var.aws_region}.console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${module.cloudwatch.dashboard_name}"
 }
 
 # Kubernetes Outputs
