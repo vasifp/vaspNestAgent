@@ -71,7 +71,7 @@ frontend/.cache/
 *.tfstate.*
 *.tfvars
 !example.tfvars
-.terraform.lock.hcl
+# Note: .terraform.lock.hcl should be committed per Terraform best practices
 crash.log
 override.tf
 override.tf.json
