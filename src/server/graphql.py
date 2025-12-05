@@ -100,7 +100,7 @@ class GraphQLServer:
         self.port = port
         self.host = host
         self.app = create_graphql_app(agent)
-        self._server: "uvicorn.Server | None" = None  # type: ignore[name-defined]
+        self._server = None
 
     def set_agent(self, agent: "OrchestrationAgent") -> None:
         """Set the agent reference.
@@ -124,7 +124,7 @@ class GraphQLServer:
             port=self.port,
             log_level="warning",
         )
-        self._server = uvicorn.Server(config)
+        self._server = uvicorn.Server(config)  # type: ignore[assignment]
 
         logger.info(
             "Starting GraphQL server",
@@ -132,7 +132,7 @@ class GraphQLServer:
             port=self.port,
         )
 
-        await self._server.serve()
+        await self._server.serve()  # type: ignore[attr-defined]
 
     async def stop(self) -> None:
         """Stop the GraphQL server."""
