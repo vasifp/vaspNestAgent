@@ -7,9 +7,14 @@ variable "cluster_name" {
 }
 
 variable "cluster_version" {
-  description = "Kubernetes version"
+  description = "Kubernetes version (1.31 or higher recommended)"
   type        = string
-  default     = "1.28"
+  default     = "1.31"
+
+  validation {
+    condition     = tonumber(split(".", var.cluster_version)[1]) >= 31
+    error_message = "EKS cluster version must be 1.31 or higher."
+  }
 }
 
 variable "vpc_id" {

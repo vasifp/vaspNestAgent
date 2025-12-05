@@ -53,9 +53,9 @@ variable "cluster_name" {
 }
 
 variable "cluster_version" {
-  description = "Kubernetes version"
+  description = "Kubernetes version (1.31 or higher recommended)"
   type        = string
-  default     = "1.28"
+  default     = "1.31"
 }
 
 variable "node_desired_size" {
