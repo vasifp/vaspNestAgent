@@ -1,0 +1,131 @@
+# Infrastructure Setup Workflow for vaspNestAgent
+# Use this workflow for initial infrastructure provisioning or major changes
+#
+# Required GitHub Secrets:
+#   - AWS_ACCOUNT_ID: Your AWS account ID
+#   - AWS_DEPLOY_ROLE_ARN: IAM role ARN for GitHub OIDC
+#   - TF_VAR_nest_client_id: Nest API client ID
+#   - TF_VAR_nest_client_secret: Nest API client secret
+#   - TF_VAR_nest_refresh_token: Nest API refresh token
+#   - TF_VAR_nest_project_id: Nest API project ID
+#   - TF_VAR_google_voice_credentials: Google Voice credentials JSON
+#   - TF_VAR_google_voice_phone_number: Google Voice phone number (480-442-0574)
+
+name: Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Terraform action'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+      environment:
+        description: 'Environment'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+          - prod
+          - staging
+
+env:
+  AWS_REGION: us-east-1
+  TF_VAR_aws_region: us-east-1
+  TF_VAR_project_name: vaspnestagent
+  TF_VAR_environment: ${{ github.event.inputs.environment }}
+
+jobs:
+  terraform:
+    name: Terraform ${{ github.event.inputs.action }}
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ github.event.inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6"
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        if: ${{ github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply' }}
+        id: plan
+        run: |
+          terraform plan \
+            -var="nest_client_id=${{ secrets.TF_VAR_nest_client_id }}" \
+            -var="nest_client_secret=${{ secrets.TF_VAR_nest_client_secret }}" \
+            -var="nest_refresh_token=${{ secrets.TF_VAR_nest_refresh_token }}" \
+            -var="nest_project_id=${{ secrets.TF_VAR_nest_project_id }}" \
+            -var="google_voice_credentials=${{ secrets.TF_VAR_google_voice_credentials }}" \
+            -var="google_voice_phone_number=${{ secrets.TF_VAR_google_voice_phone_number }}" \
+            -out=tfplan \
+            -no-color
+        env:
+          TF_VAR_nest_client_id: ${{ secrets.TF_VAR_nest_client_id }}
+          TF_VAR_nest_client_secret: ${{ secrets.TF_VAR_nest_client_secret }}
+          TF_VAR_nest_refresh_token: ${{ secrets.TF_VAR_nest_refresh_token }}
+          TF_VAR_nest_project_id: ${{ secrets.TF_VAR_nest_project_id }}
+          TF_VAR_google_voice_credentials: ${{ secrets.TF_VAR_google_voice_credentials }}
+          TF_VAR_google_voice_phone_number: ${{ secrets.TF_VAR_google_voice_phone_number }}
+
+      - name: Terraform Apply
+        if: ${{ github.event.inputs.action == 'apply' }}
+        run: terraform apply -auto-approve tfplan
+
+      - name: Terraform Destroy Plan
+        if: ${{ github.event.inputs.action == 'destroy' }}
+        run: |
+          terraform plan -destroy \
+            -var="nest_client_id=${{ secrets.TF_VAR_nest_client_id }}" \
+            -var="nest_client_secret=${{ secrets.TF_VAR_nest_client_secret }}" \
+            -var="nest_refresh_token=${{ secrets.TF_VAR_nest_refresh_token }}" \
+            -var="nest_project_id=${{ secrets.TF_VAR_nest_project_id }}" \
+            -var="google_voice_credentials=${{ secrets.TF_VAR_google_voice_credentials }}" \
+            -var="google_voice_phone_number=${{ secrets.TF_VAR_google_voice_phone_number }}" \
+            -out=tfplan-destroy \
+            -no-color
+
+      - name: Terraform Destroy
+        if: ${{ github.event.inputs.action == 'destroy' }}
+        run: terraform apply -auto-approve tfplan-destroy
+
+      - name: Output Infrastructure Details
+        if: ${{ github.event.inputs.action == 'apply' }}
+        run: |
+          echo "## Infrastructure Outputs" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| EKS Cluster | $(terraform output -raw cluster_name 2>/dev/null || echo 'N/A') |" >> $GITHUB_STEP_SUMMARY
+          echo "| EKS Endpoint | $(terraform output -raw cluster_endpoint 2>/dev/null || echo 'N/A') |" >> $GITHUB_STEP_SUMMARY
+          echo "| ECR Backend | $(terraform output -raw ecr_backend_repository_url 2>/dev/null || echo 'N/A') |" >> $GITHUB_STEP_SUMMARY
+          echo "| ECR Frontend | $(terraform output -raw ecr_frontend_repository_url 2>/dev/null || echo 'N/A') |" >> $GITHUB_STEP_SUMMARY
+          echo "| CloudWatch Dashboard | $(terraform output -raw cloudwatch_dashboard_url 2>/dev/null || echo 'N/A') |" >> $GITHUB_STEP_SUMMARY
