@@ -58,13 +58,13 @@ export const apolloClient = new ApolloClient({
       Query: {
         fields: {
           temperatureHistory: {
-            // Merge new readings with existing ones
-            merge(existing = [], incoming) {
+            // Replace existing readings with incoming ones
+            merge(_, incoming) {
               return incoming
             },
           },
           adjustmentHistory: {
-            merge(existing = [], incoming) {
+            merge(_, incoming) {
               return incoming
             },
           },
