@@ -5,10 +5,10 @@
 """
 
 import pytest
-from hypothesis import given, strategies as st, assume
+from hypothesis import given
+from hypothesis import strategies as st
 
 from src.config import Config, ConfigurationError
-
 
 # Valid value strategies
 valid_polling_interval = st.integers(min_value=10, max_value=3600)
@@ -63,7 +63,7 @@ def test_valid_config_passes_validation(
     """
     **Feature: nest-thermostat-agent, Property 6: Configuration Validation**
     **Validates: Requirements 5.3, 5.4**
-    
+
     For any configuration with values within valid ranges, validation should pass.
     """
     config = Config(
@@ -76,7 +76,7 @@ def test_valid_config_passes_validation(
         aws_region=aws_region,
         cloudwatch_log_group="/vaspNestAgent/logs",
     )
-    
+
     # Should not raise
     config.validate()
 
@@ -86,14 +86,14 @@ def test_invalid_polling_interval_low_fails_validation(polling_interval: int) ->
     """
     **Feature: nest-thermostat-agent, Property 6: Configuration Validation**
     **Validates: Requirements 5.3, 5.4**
-    
+
     For any polling_interval below minimum, validation should fail.
     """
     config = Config(polling_interval=polling_interval)
-    
+
     with pytest.raises(ConfigurationError) as exc_info:
         config.validate()
-    
+
     assert "polling_interval" in str(exc_info.value)
 
 
@@ -102,14 +102,14 @@ def test_invalid_polling_interval_high_fails_validation(polling_interval: int) -
     """
     **Feature: nest-thermostat-agent, Property 6: Configuration Validation**
     **Validates: Requirements 5.3, 5.4**
-    
+
     For any polling_interval above maximum, validation should fail.
     """
     config = Config(polling_interval=polling_interval)
-    
+
     with pytest.raises(ConfigurationError) as exc_info:
         config.validate()
-    
+
     assert "polling_interval" in str(exc_info.value)
 
 
@@ -118,14 +118,14 @@ def test_invalid_cooldown_period_low_fails_validation(cooldown_period: int) -> N
     """
     **Feature: nest-thermostat-agent, Property 6: Configuration Validation**
     **Validates: Requirements 5.3, 5.4**
-    
+
     For any cooldown_period below minimum, validation should fail.
     """
     config = Config(cooldown_period=cooldown_period)
-    
+
     with pytest.raises(ConfigurationError) as exc_info:
         config.validate()
-    
+
     assert "cooldown_period" in str(exc_info.value)
 
 
@@ -134,14 +134,14 @@ def test_invalid_cooldown_period_high_fails_validation(cooldown_period: int) -> 
     """
     **Feature: nest-thermostat-agent, Property 6: Configuration Validation**
     **Validates: Requirements 5.3, 5.4**
-    
+
     For any cooldown_period above maximum, validation should fail.
     """
     config = Config(cooldown_period=cooldown_period)
-    
+
     with pytest.raises(ConfigurationError) as exc_info:
         config.validate()
-    
+
     assert "cooldown_period" in str(exc_info.value)
 
 
@@ -150,14 +150,14 @@ def test_invalid_temperature_threshold_low_fails_validation(temperature_threshol
     """
     **Feature: nest-thermostat-agent, Property 6: Configuration Validation**
     **Validates: Requirements 5.3, 5.4**
-    
+
     For any temperature_threshold below minimum, validation should fail.
     """
     config = Config(temperature_threshold=temperature_threshold)
-    
+
     with pytest.raises(ConfigurationError) as exc_info:
         config.validate()
-    
+
     assert "temperature_threshold" in str(exc_info.value)
 
 
@@ -166,14 +166,14 @@ def test_invalid_temperature_threshold_high_fails_validation(temperature_thresho
     """
     **Feature: nest-thermostat-agent, Property 6: Configuration Validation**
     **Validates: Requirements 5.3, 5.4**
-    
+
     For any temperature_threshold above maximum, validation should fail.
     """
     config = Config(temperature_threshold=temperature_threshold)
-    
+
     with pytest.raises(ConfigurationError) as exc_info:
         config.validate()
-    
+
     assert "temperature_threshold" in str(exc_info.value)
 
 
@@ -182,14 +182,14 @@ def test_invalid_http_port_low_fails_validation(http_port: int) -> None:
     """
     **Feature: nest-thermostat-agent, Property 6: Configuration Validation**
     **Validates: Requirements 5.3, 5.4**
-    
+
     For any http_port below minimum, validation should fail.
     """
     config = Config(http_port=http_port)
-    
+
     with pytest.raises(ConfigurationError) as exc_info:
         config.validate()
-    
+
     assert "http_port" in str(exc_info.value)
 
 
@@ -198,14 +198,14 @@ def test_invalid_http_port_high_fails_validation(http_port: int) -> None:
     """
     **Feature: nest-thermostat-agent, Property 6: Configuration Validation**
     **Validates: Requirements 5.3, 5.4**
-    
+
     For any http_port above maximum, validation should fail.
     """
     config = Config(http_port=http_port)
-    
+
     with pytest.raises(ConfigurationError) as exc_info:
         config.validate()
-    
+
     assert "http_port" in str(exc_info.value)
 
 
@@ -214,14 +214,14 @@ def test_invalid_aws_region_fails_validation(aws_region: str) -> None:
     """
     **Feature: nest-thermostat-agent, Property 6: Configuration Validation**
     **Validates: Requirements 5.3, 5.4**
-    
+
     For any AWS region with invalid format, validation should fail.
     """
     config = Config(aws_region=aws_region)
-    
+
     with pytest.raises(ConfigurationError) as exc_info:
         config.validate()
-    
+
     assert "region" in str(exc_info.value).lower()
 
 
@@ -230,11 +230,11 @@ def test_valid_phone_number_passes_validation(phone_number: str) -> None:
     """
     **Feature: nest-thermostat-agent, Property 6: Configuration Validation**
     **Validates: Requirements 5.3, 5.4**
-    
+
     For any phone number in valid format, validation should pass.
     """
     config = Config(google_voice_phone_number=phone_number)
-    
+
     # Should not raise
     config.validate()
 
@@ -243,17 +243,17 @@ def test_invalid_phone_number_fails_validation() -> None:
     """
     **Feature: nest-thermostat-agent, Property 6: Configuration Validation**
     **Validates: Requirements 5.3, 5.4**
-    
+
     For phone numbers with invalid format, validation should fail.
     """
     invalid_phones = ["abc", "12345", "phone-number", "!@#$%^&*"]
-    
+
     for phone in invalid_phones:
         config = Config(google_voice_phone_number=phone)
-        
+
         with pytest.raises(ConfigurationError) as exc_info:
             config.validate()
-        
+
         assert "phone" in str(exc_info.value).lower()
 
 
@@ -261,14 +261,14 @@ def test_cloudwatch_log_group_must_start_with_slash() -> None:
     """
     **Feature: nest-thermostat-agent, Property 6: Configuration Validation**
     **Validates: Requirements 5.3, 5.4**
-    
+
     CloudWatch log group must start with '/'.
     """
     config = Config(cloudwatch_log_group="vaspNestAgent/logs")  # Missing leading /
-    
+
     with pytest.raises(ConfigurationError) as exc_info:
         config.validate()
-    
+
     assert "cloudwatch_log_group" in str(exc_info.value)
 
 
@@ -276,11 +276,11 @@ def test_empty_phone_number_passes_validation() -> None:
     """
     **Feature: nest-thermostat-agent, Property 6: Configuration Validation**
     **Validates: Requirements 5.3, 5.4**
-    
+
     Empty phone number should pass validation (optional field).
     """
     config = Config(google_voice_phone_number="")
-    
+
     # Should not raise
     config.validate()
 
@@ -288,9 +288,9 @@ def test_empty_phone_number_passes_validation() -> None:
 def test_phone_masking() -> None:
     """Test that phone numbers are properly masked for logging."""
     config = Config(google_voice_phone_number="480-442-0574")
-    
+
     masked = config.get_masked_phone()
-    
+
     assert masked == "***-***-0574"
     assert "480" not in masked
     assert "442" not in masked

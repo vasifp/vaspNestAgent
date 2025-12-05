@@ -23,11 +23,9 @@ Usage:
 """
 
 import argparse
-import json
 import os
 import sys
 from dataclasses import dataclass
-from typing import Optional
 
 try:
     import requests
@@ -39,7 +37,7 @@ except ImportError:
 @dataclass
 class JiraStory:
     """Represents a Jira story to be created."""
-    
+
     id: int
     summary: str
     description: str
@@ -429,7 +427,7 @@ class JiraClient:
         project_key: str,
     ):
         """Initialize the Jira client.
-        
+
         Args:
             base_url: Jira instance URL (e.g., https://vaspinet.atlassian.net)
             email: Atlassian account email
@@ -445,13 +443,13 @@ class JiraClient:
             "Accept": "application/json",
         })
 
-    def create_epic(self, summary: str, description: str) -> Optional[str]:
+    def create_epic(self, summary: str, description: str) -> str | None:
         """Create an epic in Jira.
-        
+
         Args:
             summary: Epic summary
             description: Epic description
-            
+
         Returns:
             Epic key if successful, None otherwise
         """
@@ -484,19 +482,19 @@ class JiraClient:
     def create_story(
         self,
         story: JiraStory,
-        epic_key: Optional[str] = None,
-    ) -> Optional[str]:
+        epic_key: str | None = None,
+    ) -> str | None:
         """Create a story in Jira.
-        
+
         Args:
             story: Story to create
             epic_key: Optional epic to link to
-            
+
         Returns:
             Story key if successful, None otherwise
         """
         url = f"{self.base_url}/rest/api/3/issue"
-        
+
         # Build description with acceptance criteria
         description_content = [
             {
@@ -510,7 +508,7 @@ class JiraClient:
                 ],
             },
         ]
-        
+
         # Add acceptance criteria as bullet list
         list_items = []
         for criterion in story.acceptance_criteria:
@@ -523,7 +521,7 @@ class JiraClient:
                     }
                 ],
             })
-        
+
         description_content.append({
             "type": "bulletList",
             "content": list_items,
@@ -557,7 +555,7 @@ class JiraClient:
 
     def test_connection(self) -> bool:
         """Test the Jira connection.
-        
+
         Returns:
             True if connection successful
         """
@@ -633,11 +631,11 @@ def main():
             print(f"  Created: {key}")
             created.append((story.id, key))
         else:
-            print(f"  Failed!")
+            print("  Failed!")
             failed.append(story.id)
 
     # Summary
-    print(f"\n=== Summary ===")
+    print("\n=== Summary ===")
     print(f"Created: {len(created)} stories")
     if created:
         for story_id, key in created:

@@ -8,7 +8,6 @@ import json
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Any, Optional
 
 import structlog
 
@@ -24,7 +23,7 @@ class ConfigurationError(Exception):
 @dataclass
 class Config:
     """Application configuration.
-    
+
     Non-sensitive settings are loaded from environment variables.
     Sensitive credentials are loaded from AWS Secrets Manager.
     """
@@ -55,7 +54,7 @@ class Config:
     @classmethod
     def from_environment(cls) -> "Config":
         """Load configuration from environment variables only.
-        
+
         Use this for local development without AWS Secrets Manager.
         """
         config = cls()
@@ -67,25 +66,25 @@ class Config:
     @classmethod
     async def load(cls, use_secrets_manager: bool = True) -> "Config":
         """Load configuration from environment and optionally Secrets Manager.
-        
+
         Args:
             use_secrets_manager: If True, load sensitive values from AWS Secrets Manager.
                                If False, load from environment variables.
-        
+
         Returns:
             Configured Config instance.
-            
+
         Raises:
             ConfigurationError: If required configuration is missing or invalid.
         """
         config = cls()
         config._load_from_environment()
-        
+
         if use_secrets_manager:
             await config._load_from_secrets_manager()
         else:
             config._load_sensitive_from_environment()
-        
+
         config.validate()
         config._log_config()
         return config
@@ -113,11 +112,11 @@ class Config:
                 except (ValueError, TypeError) as e:
                     raise ConfigurationError(
                         f"Invalid value for {env_var}: {value}. Error: {e}"
-                    )
+                    ) from e
 
     def _load_sensitive_from_environment(self) -> None:
         """Load sensitive configuration from environment variables.
-        
+
         Used for local development without Secrets Manager.
         """
         sensitive_mappings = {
@@ -132,7 +131,7 @@ class Config:
         for env_var, attr in sensitive_mappings.items():
             value = os.environ.get(env_var, "")
             setattr(self, attr, value)
-        
+
         self._secrets_loaded = True
 
     async def _load_from_secrets_manager(self) -> None:
@@ -155,7 +154,7 @@ class Config:
         except ClientError as e:
             raise ConfigurationError(
                 f"Failed to load Nest credentials from Secrets Manager: {e}"
-            )
+            ) from e
 
         # Load Google Voice credentials
         try:
@@ -168,13 +167,13 @@ class Config:
         except ClientError as e:
             raise ConfigurationError(
                 f"Failed to load Google Voice credentials from Secrets Manager: {e}"
-            )
+            ) from e
 
         self._secrets_loaded = True
 
     def validate(self) -> None:
         """Validate all configuration values.
-        
+
         Raises:
             ConfigurationError: If any configuration value is invalid.
         """
@@ -231,7 +230,7 @@ class Config:
 
         if errors:
             raise ConfigurationError(
-                f"Configuration validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
+                "Configuration validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
             )
 
     def _log_config(self) -> None:

@@ -6,11 +6,11 @@ Implements connection to CloudWatch Logs and Metrics for observability.
 import json
 import time
 from datetime import datetime
-from typing import Any, Optional, Sequence
+from typing import Any
 
 import boto3
-from botocore.exceptions import ClientError
 import structlog
+from botocore.exceptions import ClientError
 
 logger = structlog.get_logger(__name__)
 
@@ -23,7 +23,7 @@ class CloudWatchError(Exception):
 
 class CloudWatchClient:
     """Client for AWS CloudWatch Logs and Metrics.
-    
+
     Handles log event publishing and custom metric publishing
     for the vaspNestAgent dashboard.
     """
@@ -37,7 +37,7 @@ class CloudWatchClient:
         log_stream_prefix: str = "agent",
     ):
         """Initialize the CloudWatch client.
-        
+
         Args:
             log_group: CloudWatch log group name (e.g., "/vaspNestAgent/logs")
             region: AWS region
@@ -46,27 +46,27 @@ class CloudWatchClient:
         self.log_group = log_group
         self.region = region
         self.log_stream_prefix = log_stream_prefix
-        
+
         self._logs_client = boto3.client("logs", region_name=region)
         self._metrics_client = boto3.client("cloudwatch", region_name=region)
-        
-        self._log_stream_name: Optional[str] = None
-        self._sequence_token: Optional[str] = None
+
+        self._log_stream_name: str | None = None
+        self._sequence_token: str | None = None
         self._initialized = False
 
     async def initialize(self) -> None:
         """Initialize the CloudWatch client.
-        
+
         Creates log group and log stream if they don't exist.
         """
         try:
             # Ensure log group exists
             await self._ensure_log_group()
-            
+
             # Create log stream for this session
             self._log_stream_name = f"{self.log_stream_prefix}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
             await self._create_log_stream()
-            
+
             self._initialized = True
             logger.info(
                 "CloudWatch client initialized",
@@ -75,7 +75,7 @@ class CloudWatchClient:
             )
         except Exception as e:
             logger.error("Failed to initialize CloudWatch client", error=str(e))
-            raise CloudWatchError(f"Failed to initialize CloudWatch: {e}")
+            raise CloudWatchError(f"Failed to initialize CloudWatch: {e}") from e
 
     async def _ensure_log_group(self) -> None:
         """Ensure the log group exists, create if not."""
@@ -99,10 +99,10 @@ class CloudWatchClient:
 
     async def put_log_events(self, events: list[dict[str, Any]]) -> bool:
         """Write log events to CloudWatch Logs.
-        
+
         Args:
             events: List of log events, each with 'timestamp' and 'message' keys.
-            
+
         Returns:
             True if successful, False otherwise.
         """
@@ -122,7 +122,7 @@ class CloudWatchClient:
                 }
                 for event in events
             ]
-            
+
             # Sort by timestamp (required by CloudWatch)
             log_events.sort(key=lambda x: x["timestamp"])
 
@@ -131,13 +131,13 @@ class CloudWatchClient:
                 "logStreamName": self._log_stream_name,
                 "logEvents": log_events,
             }
-            
+
             if self._sequence_token:
                 kwargs["sequenceToken"] = self._sequence_token
 
             response = self._logs_client.put_log_events(**kwargs)
             self._sequence_token = response.get("nextSequenceToken")
-            
+
             return True
         except ClientError as e:
             error_code = e.response["Error"]["Code"]
@@ -153,10 +153,10 @@ class CloudWatchClient:
 
     async def put_log_event(self, event: dict[str, Any]) -> bool:
         """Write a single log event to CloudWatch Logs.
-        
+
         Args:
             event: Log event dictionary.
-            
+
         Returns:
             True if successful, False otherwise.
         """
@@ -167,16 +167,16 @@ class CloudWatchClient:
         metric_name: str,
         value: float,
         unit: str = "None",
-        dimensions: Optional[dict[str, str]] = None,
+        dimensions: dict[str, str] | None = None,
     ) -> bool:
         """Publish a custom metric to CloudWatch Metrics.
-        
+
         Args:
             metric_name: Name of the metric
             value: Metric value
             unit: Unit of measurement (e.g., "Count", "Seconds", "None")
             dimensions: Optional metric dimensions
-            
+
         Returns:
             True if successful, False otherwise.
         """
@@ -187,7 +187,7 @@ class CloudWatchClient:
                 "Unit": unit,
                 "Timestamp": datetime.utcnow(),
             }
-            
+
             if dimensions:
                 metric_data["Dimensions"] = [
                     {"Name": k, "Value": v} for k, v in dimensions.items()
@@ -197,7 +197,7 @@ class CloudWatchClient:
                 Namespace=self.METRIC_NAMESPACE,
                 MetricData=[metric_data],
             )
-            
+
             logger.debug(
                 "Published metric",
                 metric_name=metric_name,
@@ -214,14 +214,14 @@ class CloudWatchClient:
         metrics: list[dict[str, Any]],
     ) -> bool:
         """Publish multiple metrics to CloudWatch Metrics.
-        
+
         Args:
             metrics: List of metric dictionaries with keys:
                 - metric_name: str
                 - value: float
                 - unit: str (optional, default "None")
                 - dimensions: dict (optional)
-                
+
         Returns:
             True if all successful, False otherwise.
         """
@@ -250,14 +250,14 @@ class CloudWatchClient:
                     Namespace=self.METRIC_NAMESPACE,
                     MetricData=batch,
                 )
-            
+
             return True
         except Exception as e:
             logger.error("Failed to publish metrics", error=str(e))
             return False
 
     # Convenience methods for common metrics
-    
+
     async def publish_temperature_reading(
         self,
         ambient: float,

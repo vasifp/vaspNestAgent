@@ -4,10 +4,8 @@ This agent handles all logging to CloudWatch with proper structure
 and publishes metrics for the vaspNestAgent dashboard.
 """
 
-import json
-import time
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 
@@ -33,26 +31,26 @@ class LoggingAgentError(Exception):
 
 class LoggingAgent:
     """Agent for CloudWatch logging and metrics.
-    
+
     Registers Strands tools for logging temperature readings, adjustments,
     and notifications. Formats log events with proper structure.
     """
 
     def __init__(self, config: Config):
         """Initialize the LoggingAgent.
-        
+
         Args:
             config: Application configuration with CloudWatch settings.
         """
         self.config = config
-        self._client: Optional[CloudWatchClient] = None
+        self._client: CloudWatchClient | None = None
         self._initialized = False
         self._event_buffer: list[LogEvent] = []
         self._buffer_size = 10  # Flush after this many events
 
     async def initialize(self) -> None:
         """Initialize the agent and connect to CloudWatch.
-        
+
         Raises:
             LoggingAgentError: If initialization fails.
         """
@@ -63,24 +61,24 @@ class LoggingAgent:
             )
             await self._client.initialize()
             self._initialized = True
-            
+
             # Log agent started event
             await self.log_event(
                 event_type=EventType.AGENT_STARTED,
                 severity=Severity.INFO,
                 data={"message": "LoggingAgent initialized"},
             )
-            
+
             logger.info("LoggingAgent initialized successfully")
         except Exception as e:
             logger.error("Failed to initialize LoggingAgent", error=str(e))
-            raise LoggingAgentError(f"Failed to initialize LoggingAgent: {e}")
+            raise LoggingAgentError(f"Failed to initialize LoggingAgent: {e}") from e
 
     async def close(self) -> None:
         """Close the agent and flush pending logs."""
         if self._event_buffer:
             await self.flush()
-        
+
         # Log agent stopped event
         if self._initialized and self._client:
             await self.log_event(
@@ -89,7 +87,7 @@ class LoggingAgent:
                 data={"message": "LoggingAgent shutting down"},
             )
             await self.flush()
-        
+
         self._initialized = False
         logger.info("LoggingAgent closed")
 
@@ -100,7 +98,7 @@ class LoggingAgent:
 
     async def flush(self) -> bool:
         """Flush buffered log events to CloudWatch.
-        
+
         Returns:
             True if successful, False otherwise.
         """
@@ -114,7 +112,7 @@ class LoggingAgent:
             }
             for e in self._event_buffer
         ]
-        
+
         success = await self._client.put_log_events(events)
         if success:
             self._event_buffer.clear()
@@ -125,16 +123,16 @@ class LoggingAgent:
         event_type: EventType,
         severity: Severity,
         data: dict[str, Any],
-        message: Optional[str] = None,
+        message: str | None = None,
     ) -> bool:
         """Log a generic event to CloudWatch.
-        
+
         Args:
             event_type: Type of event
             severity: Severity level
             data: Event data dictionary
             message: Optional human-readable message
-            
+
         Returns:
             True if successful, False otherwise.
         """
@@ -145,13 +143,13 @@ class LoggingAgent:
             data=data,
             message=message,
         )
-        
+
         self._event_buffer.append(event)
-        
+
         # Flush if buffer is full
         if len(self._event_buffer) >= self._buffer_size:
             return await self.flush()
-        
+
         return True
 
     # Strands-compatible tool methods
@@ -161,12 +159,12 @@ class LoggingAgent:
         temperature_data: TemperatureData | dict[str, Any],
     ) -> dict[str, Any]:
         """Log a temperature reading to CloudWatch.
-        
+
         This is a Strands-compatible tool.
-        
+
         Args:
             temperature_data: Temperature data to log
-            
+
         Returns:
             Dictionary with result status.
         """
@@ -221,12 +219,12 @@ class LoggingAgent:
         adjustment_event: AdjustmentEvent | dict[str, Any],
     ) -> dict[str, Any]:
         """Log a temperature adjustment event to CloudWatch.
-        
+
         This is a Strands-compatible tool.
-        
+
         Args:
             adjustment_event: Adjustment event to log
-            
+
         Returns:
             Dictionary with result status.
         """
@@ -278,12 +276,12 @@ class LoggingAgent:
         notification_event: NotificationEvent | dict[str, Any],
     ) -> dict[str, Any]:
         """Log a notification event to CloudWatch.
-        
+
         This is a Strands-compatible tool.
-        
+
         Args:
             notification_event: Notification event to log
-            
+
         Returns:
             Dictionary with result status.
         """
@@ -339,15 +337,15 @@ class LoggingAgent:
         self,
         error_message: str,
         error_type: str = "unknown",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Log an error event to CloudWatch.
-        
+
         Args:
             error_message: Error message
             error_type: Type of error
             details: Additional error details
-            
+
         Returns:
             Dictionary with result status.
         """
@@ -380,10 +378,10 @@ class LoggingAgent:
 
     async def publish_health_status(self, healthy: bool) -> dict[str, Any]:
         """Publish health status metric.
-        
+
         Args:
             healthy: Whether the system is healthy
-            
+
         Returns:
             Dictionary with result status.
         """
@@ -402,11 +400,11 @@ class LoggingAgent:
         latency_ms: float,
     ) -> dict[str, Any]:
         """Publish API latency metric.
-        
+
         Args:
             api_name: Name of the API (e.g., "NestAPI", "GoogleVoice")
             latency_ms: Latency in milliseconds
-            
+
         Returns:
             Dictionary with result status.
         """
@@ -423,7 +421,7 @@ class LoggingAgent:
 
     def get_tools(self) -> list[dict[str, Any]]:
         """Get the list of tools provided by this agent.
-        
+
         Returns:
             List of tool definitions for Strands SDK registration.
         """
