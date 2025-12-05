@@ -12,6 +12,8 @@ vaspNestAgent is an autonomous temperature monitoring system that uses multi-age
 - [API Reference](api-reference.md) - GraphQL API documentation
 - [Deployment](deployment.md) - AWS EKS deployment guide
 - [Development](development.md) - Contributing and testing
+- [Jira Integration](jira-integration.md) - GitHub-Jira workflow automation
+- [Jira Stories](jira-stories.md) - Project stories for import
 
 ## Features
 
