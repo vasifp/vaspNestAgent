@@ -771,7 +771,7 @@ class OrchestrationAgent:
         )
 
         # Set new temperature
-        result = await self.nest_agent.set_temperature(new_target)
+        result = await self.nest_agent.set_temperature(new_target)  # type: ignore[attr-defined]
 
         if result and result.success:
             # Record adjustment

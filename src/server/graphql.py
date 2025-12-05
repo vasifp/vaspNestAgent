@@ -100,7 +100,7 @@ class GraphQLServer:
         self.port = port
         self.host = host
         self.app = create_graphql_app(agent)
-        self._server = None
+        self._server: "uvicorn.Server | None" = None  # type: ignore[name-defined]
 
     def set_agent(self, agent: "OrchestrationAgent") -> None:
         """Set the agent reference.

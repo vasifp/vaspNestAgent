@@ -108,7 +108,7 @@ class Config:
             value = os.environ.get(env_var)
             if value is not None:
                 try:
-                    setattr(self, attr, converter(value))
+                    setattr(self, attr, converter(value))  # type: ignore[operator]
                 except (ValueError, TypeError) as e:
                     raise ConfigurationError(
                         f"Invalid value for {env_var}: {value}. Error: {e}"
